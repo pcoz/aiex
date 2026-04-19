@@ -139,7 +139,11 @@ DEFAULT_ROUTING_TABLE: dict[ReasoningType, RoutingDecision] = {
         base_tier=ModelTier.GENERATIVE_STANDARD,
         template_name="weigh_tradeoff",
         temperature=0.3,
-        neuron_budget=1300,
+        # 1531 matches the AILang v0.8.2 spec figure for WEIGH and the
+        # NEURON_TABLE in compiler/budget.py (the source of truth for the
+        # budget report).  Earlier this was 1300, which silently disagreed
+        # with the budget calculation; harmonised on 2026-04-19.
+        neuron_budget=1531,
     ),
     ReasoningType.INTELLIGENTLY: RoutingDecision(
         operation_type=ReasoningType.INTELLIGENTLY,

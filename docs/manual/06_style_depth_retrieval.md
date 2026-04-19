@@ -45,8 +45,8 @@ Here is the depth table from [`routing.py`](../../src/aiex/models/routing.py):
 | SHALLOW | 0.5× | 1 | "Provide a brief, high-level answer." |
 | STANDARD | 1.0× | 1 | (none) |
 | THOROUGH | 1.5× | 2 | "Be thorough and cover edge cases." |
-| DEEP | 2.0× | 3 | "Provide deep analysis with supporting reasoning." |
-| EXHAUSTIVE | 3.0× | 5 | "Perform an exhaustive analysis. Consider every angle..." |
+| DEEP | 2.5× | 3 | "Provide deep analysis with supporting reasoning." |
+| EXHAUSTIVE | 4.0× | 5 | "Perform an exhaustive analysis. Consider every angle..." |
 
 SHALLOW halves your token cost at the price of quality. Use it when you genuinely just want a sanity check. STANDARD is the default and what most production code should use. THOROUGH buys you a refinement pass -- the runtime prompts the model to refine its first answer.
 

@@ -2,7 +2,7 @@
 
 The single biggest cost lever in AIEX is that it does not send every
 operation to Opus. An all-Opus baseline for the loan eligibility
-example costs $0.36 per run; the routed plan costs $0.043 -- an 88.1%
+example costs $0.36 per run; the routed plan costs $0.044 -- an 87.8%
 reduction, achieved entirely by directing each operation to the
 cheapest tier that can produce the required output. On the larger
 `test_10` benchmark the same mechanism yields 87.8% savings for a
@@ -119,9 +119,9 @@ receive the dispatch:
 
 ```
 TX                  Operation   Retrieval  Model                  Est. Cost
-tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6      $0.0180
+tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6      $0.0144
 tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6        $0.0135
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6        $0.0115
+tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6        $0.0162
 ```
 
 If you want to see the escalation reason, inspect the plan
@@ -151,7 +151,7 @@ a stray `DEPTH: DEEP` on an operation that did not need it.
 Here is how the router handles a five-step pipeline. Assume the
 program has these operations in order:
 
-1. `RETRIEVE relevant_cases FROM case_archive` -- no depth, standard retrieval
+1. `RETRIEVE relevant_cases FOR case_archive` -- no depth, standard retrieval
 2. `COMPARE cases AGAINST current_case` -- no depth, standard retrieval
 3. `TRACE cause_chain FROM evidence` -- depth: standard
 4. `WEIGH factors ON evidence` -- depth: deep

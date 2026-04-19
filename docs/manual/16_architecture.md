@@ -97,7 +97,7 @@ No other mutation path exists. The entire runtime effect on `state.variables` ha
  ProgramState (variables, results, digests, execution_log)
 ```
 
-Each arrow is the output of one clearly defined module and the input of the next. The AST and ExecutionPlan are immutable; everything upstream of the engine is a pure transformation. Mutability appears only once, at the very end, and only through `ProgramState` -- which is itself a narrow interface with logged mutations. For more detail on each individual transformation, see [chapter 8](08_compilation.md) on compilation and [chapter 12](12_dispatch_validate_commit.md) on the runtime cycle.
+Each arrow is the output of one clearly defined module and the input of the next. The AST and ExecutionPlan are immutable; everything upstream of the engine is a pure transformation. Mutability appears only once, at the very end, and only through `ProgramState` -- which is itself a narrow interface with logged mutations. For more detail on each individual transformation, see the [compilation walkthrough](../compilation_walkthrough.md) and [chapter 12](12_dispatch_validate_commit.md) on the runtime cycle.
 
 ## The design principle
 

@@ -111,9 +111,9 @@ BEGIN REASONING_CONTEXT migration_analysis:
         }
     END
 
-    # Step 4: Synthesize from all accumulated context
-    # FROM CONTEXT reads all three prior digests (not the full outputs)
-    SYNTHESIZE migration_decision FROM CONTEXT WITH:
+    # Step 4: Synthesize from all accumulated digests
+    # The sources list names the prior steps whose digests feed the merge
+    SYNTHESIZE [current_stack_analysis, migration_options, architect_recommendations] INTO migration_decision WITH:
         MUST_INCLUDE: [integrated_rationale, risk_assessment, implementation_roadmap]
         OUTPUT_FORMAT: {
             decision: TEXT,
@@ -127,7 +127,7 @@ BEGIN REASONING_CONTEXT migration_analysis:
 END REASONING_CONTEXT
 ```
 
-Four operations, one accumulator. The `SYNTHESIZE migration_decision FROM CONTEXT` step receives three digests -- one each from the RETRIEVE, COMPARE, and WEIGH -- as its input. It never sees the raw 2000-token outputs of those steps; it sees the 100-token structured summaries. The `migration_decision` variable persists after `END REASONING_CONTEXT`; the digest accumulator is scoped and disposed.
+Four operations, one accumulator. The `SYNTHESIZE [...] INTO migration_decision` step names the three prior-step digests as its sources and merges them into a single result. Inside a REASONING_CONTEXT, SYNTHESIZE reads those sources as their compact digests -- never as the raw 2000-token outputs -- so the merge prompt stays within budget. The `migration_decision` variable persists after `END REASONING_CONTEXT`; the digest accumulator is scoped and disposed.
 
 ### FROM CONTEXT variants
 

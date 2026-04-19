@@ -1,7 +1,7 @@
 # AILang → AIEX Compilation Walkthrough
 
 **Source:** `ailang-v0.8.2/tests/test_10_retrieval_budget.ailang`
-**Output:** `aiex/compiled_example_test_10.aiex`
+**Output:** `docs/examples/compiled_example_test_10.aiex`
 **Date:** 2026-04-16
 
 This document walks through every transformation the compiler performs, showing how each AILang construct becomes AIEX.

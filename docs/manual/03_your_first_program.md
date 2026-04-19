@@ -173,12 +173,14 @@ concepts are compiled into `{BOUNDARY_INSTRUCTIONS}` in the system
 prompt so the model knows what to include, plus they become post-hoc
 validators. The neuron count and model tier are unchanged.
 
-Run it. If `MUST_INCLUDE` fails with MAJOR severity, AIEX retries the
-dispatch with a reinforced prompt that names the missing concept.
-After two retries, a continuing failure escalates to CRITICAL and
-rolls back. In practice Sonnet produces a grounded rationale on the
-first try, but the contract means you notice immediately on the rare
-run where it does not.
+Run it. If `MUST_INCLUDE` fails it is a CRITICAL severity violation
+by default: the transaction rolls back, the missing concept is
+logged, and no state is committed. There is no silent retry loop --
+a CRITICAL failure is a signal to the caller that the operation
+needs re-issuing (with stronger premises or tighter wording). In
+practice Sonnet produces a grounded rationale on the first try, but
+the contract means you notice immediately on the rare run where it
+does not.
 
 ## Pass 4: Forbid Drift with `CANNOT_INCLUDE`
 
@@ -251,10 +253,10 @@ whose cost is known before it runs, and whose contract fails
 predictably rather than quietly. The same template scales: replace
 `DEDUCE` with `WEIGH` for judgment tasks, chain operations with
 `THEN` to build multi-step reasoning (see
-[chapter 6](06_chaining_operations.md)), or interleave
+[chapter 8](08_pipelines.md)), or interleave
 `EXECUTE_CODE python:` blocks for deterministic math as the
 loan-eligibility example does (see
-[chapter 8](08_executing_code.md)).
+[chapter 10](10_execute_code.md)).
 
 The next chapter unpacks the budget report in detail -- every column,
 every number -- so that when you compile something more complicated,

@@ -9,19 +9,19 @@ Program: loan-eligibility
 Transactions: 5
 
 TX                  Operation   Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-tx-1-affordability  CODE        NONE       python                      0  $0.0000    10ms
-tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0180    4000ms
+tx-1-affordability  CODE        NONE       local-code                  0  $0.0000    10ms
+tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0144    4000ms
 tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6           666  $0.0135    6000ms
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0115    6000ms
-tx-5-audit          CODE        NONE       python                      0  $0.0000    10ms
+tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0162    6000ms
+tx-5-audit          CODE        NONE       local-code                  0  $0.0000    10ms
 
-  Total estimated cost:    $0.0430
+  Total estimated cost:    $0.0441
   vs. all-Opus baseline:   $0.3600
-  Savings: 88.1%
+  Savings: 87.8%
   Estimated latency:       16020ms
 ```
 
-`$0.043 per run. Eight seconds. 88% cheaper than the naive approach.`
+`$0.0441 per run. Sixteen seconds. 88% cheaper than the naive approach.`
 The developer sees that number before paying a cent. If it is too high,
 they change `DEPTH: DEEP` to `DEPTH: STANDARD`, or drop a
 `RETRIEVAL_BUDGET: STANDARD` down to `MINIMAL`, recompile, and watch the
@@ -82,8 +82,8 @@ report possible: once the plan is known, its cost and latency can be
 calculated.
 
 See [chapter 5](05_typed_reasoning_operations.md) for the reasoning
-operations and [chapter 7](07_the_five_divisions.md) for a deeper tour
-of the divisions.
+operations and [chapter 16](16_architecture.md) for a deeper tour
+of the five DIVISIONs.
 
 ## Multi-Tier Routing
 
@@ -129,8 +129,9 @@ This is the "transaction" in AIEX's transaction-based model: the
 operation either commits cleanly, or its effect on program state is
 erased. There is no "the LLM returned something weird and the
 downstream step happened to work anyway." See
-[chapter 9](09_contracts_and_validation.md) for the full contract
-reference.
+[chapter 7](07_output_contracts.md) for the full contract reference
+and [chapter 12](12_dispatch_validate_commit.md) for the
+dispatch/validate/commit lifecycle.
 
 ## Pre-Execution Budgets
 

@@ -62,14 +62,14 @@ Transactions: 5
                         Transaction Budget
 TX                  Operation   Retrieval  Model              Est. Cost  Est. Latency
 tx-1-affordability  CODE        NONE       local-code         $0.0000    100ms
-tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6  $0.0180    4000ms
+tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6  $0.0144    4000ms
 tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6    $0.0135    6000ms
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6    $0.0115    6000ms
+tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6    $0.0162    6000ms
 tx-5-audit          CODE        NONE       local-code         $0.0000    100ms
 
-  Total estimated cost:    $0.0430
+  Total estimated cost:    $0.0441
   vs. all-Opus baseline:   $0.3600
-  Savings: 88.1%
+  Savings: 87.8%
   Estimated latency:       16200ms
 ```
 

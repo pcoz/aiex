@@ -76,7 +76,7 @@ Create a file called `hello.ailang` with exactly this content:
 
 SET city TO "Jerusalem"
 
-RETRIEVE weather_facts FROM city WITH:
+RETRIEVE weather_facts FOR city WITH:
     RETRIEVAL_BUDGET: MINIMAL
     DEPTH: SHALLOW
     MUST_INCLUDE: [city_name, climate_zone]
@@ -170,7 +170,7 @@ The runtime printed a budget report first, then executed each
 transaction in topological order, then printed a summary. Every
 committed transaction's result is now in program state. If you had
 chained another operation downstream of this one (see
-[chapter 6](06_chaining_operations.md)), it would have read
+[chapter 8](08_pipelines.md)), it would have read
 `weather_facts` from state and proceeded.
 
 To persist the structured results to disk:

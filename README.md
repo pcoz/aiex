@@ -10,14 +10,14 @@ Transactions: 5
 | TX                | Operation     | Model       | Est. Cost |
 |-------------------|---------------|-------------|-----------|
 | tx-1-codeblock    | CODE_EXECUTION| local-code  |   $0.0000 |
-| tx-2-hard_elig... | DEDUCE        | claude-...  |   $0.0132 |
+| tx-2-hard_elig... | DEDUCE        | claude-...  |   $0.0144 |
 | tx-3-soft_fact... | WEIGH         | claude-...  |   $0.0135 |
 | tx-4-final_dec... | SYNTHESIZE    | claude-...  |   $0.0162 |
 | tx-5-codeblock    | CODE_EXECUTION| local-code  |   $0.0000 |
 
-  Total estimated cost:    $0.0429
+  Total estimated cost:    $0.0441
   vs. all-Opus baseline:   $0.3600
-  Savings: 88.1%
+  Savings: 87.8%
   Estimated latency:       8200ms
 ```
 
@@ -50,6 +50,22 @@ AIEX is built for **business-rules workloads where qualitative judgment matters 
 AIEX gives you back the qualitative substrate (LLM reasoning) without the production-grade concerns of cost, audit, and reproducibility being afterthoughts.
 
 It is **not** the right substrate for sub-millisecond decisioning, formally-verified safety-critical systems, or cases where every rule is `(field op constant)` (classical code is cheaper there).
+
+## How AIEX compares to other frameworks
+
+AIEX overlaps in places with several adjacent ecosystems but solves a different shape of problem. The honest comparison:
+
+**vs. LLM orchestration frameworks (LangChain, LangGraph, AutoGen, CrewAI).** These are general-purpose toolkits for chaining LLM calls and coordinating agents. They give you primitives (chains, graphs, agents, tools) but leave routing, cost control, contract enforcement, and audit trails to you. AIEX is narrower and more opinionated: every operation is a typed transaction with a declared contract, routed automatically to the cheapest tier that can produce the required output, with a pre-execution budget and a transactional commit/rollback log built in. If you need a flexible toolkit to assemble agents, those frameworks fit better. If you need a runtime for *the same kind of program* run thousands of times a day with predictable cost and a regulator-grade audit trail, AIEX fits better.
+
+**vs. structured-output libraries (Instructor, Outlines, Guidance, LMQL).** These constrain LLM output to a schema — Pydantic models, regex-bounded grammars, JSON enforced at decode time. AIEX includes structured output (`OUTPUT_FORMAT` with constrained `TEXT IN [...]` enums and nested `LIST OF OBJECT { ... }`) but also enforces *semantic* contracts (`MUST_INCLUDE`, `CANNOT_INCLUDE`) and adds severity-tiered retry-with-reinforcement and rollback. If schema enforcement is all you need, the lighter libraries are sufficient and easier to drop in. If you need "the response must mention X but must not mention Y, and on failure retry with the violation noted, and on repeated failure roll the transaction back", AIEX is built around that workflow.
+
+**vs. prompt optimization frameworks (DSPy).** DSPy treats LLM programs as differentiable modules whose prompts are *learned* by an optimizer against a metric. AIEX treats LLM programs as *declared* — the programmer specifies which reasoning type, which depth, which contracts, and the runtime executes that declaration. The two are complementary in principle (DSPy could optimise prompts within an AIEX template) but philosophically opposite: DSPy automates prompt design; AIEX makes prompt design unnecessary because the right template is selected by the operation type.
+
+**vs. model gateways (LiteLLM, OpenRouter, Portkey).** Gateways route LLM calls across providers based on availability, fallback, latency, or simple cost rules — usually one query at a time, with the routing decision opaque to the caller. AIEX routes *per reasoning type* based on the LLM Reasoning Router research showing different reasoning types activate different neuron populations: RETRIEVE goes to BERT-class models, DEDUCE to Sonnet, WEIGH to Opus. This isn't a fallback or load-balancing decision — it's a quality decision driven by what each operation needs. Gateways and AIEX can compose: AIEX picks the tier, the gateway picks the provider within that tier.
+
+**vs. classical business-rules engines (Drools, IBM ODM, Camunda DMN).** These are mature, enterprise-grade systems for executing rules. They scale, they have tooling, they have decades of operational lineage. They also force qualitative policy ("the customer's industry stability") into brittle quantitative encodings (`if industry in BAD_LIST`) and require a developer for every rule change. AIEX keeps the rules in their natural form (declarative reasoning operations with output contracts that compliance officers can read) and trades sub-millisecond latency and bit-exact reproducibility — neither of which most business-rules systems actually have under load — for orders of magnitude more flexibility. For high-throughput deterministic decisioning the classical engines remain the right answer; for qualitative judgment work currently bottlenecked on human reviewers or rotting if/else cascades, AIEX is the credible alternative.
+
+The short version: AIEX is a *transactional execution runtime* for declarative AI reasoning programs, not a toolkit, not an optimizer, not a gateway, not a rules engine. The closest single comparison is "Drools, but the rules are written in English and the engine reasons rather than evaluates" — but that comparison undersells the cost-routing, contract-enforcement, and code-block integration that make it production-ready in ways Drools never had to be.
 
 ## How to use AIEX
 
@@ -127,7 +143,7 @@ Save this as `hello.ailang`:
 #ailang v0.8.2
 SET topic TO "the boiling point of water at sea level"
 
-RETRIEVE answer FROM topic WITH:
+RETRIEVE answer FOR topic WITH:
     RETRIEVAL_BUDGET: STANDARD
     OUTPUT_FORMAT: { value: TEXT, units: TEXT, source: TEXT }
 END
@@ -145,9 +161,9 @@ For a step-by-step walkthrough of a more substantial program, see [chapter 3 of 
 ## Documentation
 
 - **[User Manual](docs/manual/index.md)** — complete walkthrough, 18 chapters
-- **[AIEX Specification](AIEX_Specification_v0.1.md)** — language design and routing semantics
-- **[Architecture](ARCHITECTURE.md)** — five-DIVISION COBOL inheritance and the rationale
-- **[Compilation Walkthrough](compilation_walkthrough.md)** — step-by-step example of compiling one AILang program
+- **[AIEX Specification](docs/specification.md)** — language design and routing semantics
+- **[Architecture](docs/architecture.md)** — five-DIVISION COBOL inheritance and the rationale
+- **[Compilation Walkthrough](docs/compilation_walkthrough.md)** — step-by-step example of compiling one AILang program
 - **[AILang Specification](https://github.com/pcoz/ailang/blob/main/AILang_Specification.md)** — the language AIEX runs
 
 ## License

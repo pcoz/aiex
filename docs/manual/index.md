@@ -8,6 +8,8 @@ The chapters go from the simplest possible "save a file and run it" through to t
 
 AIEX is the execution runtime for [AILang](https://github.com/pcoz/ailang). AILang lets you write AI reasoning programs in structured English (typed reasoning operations like `DEDUCE`, `RETRIEVE`, `WEIGH`; orthogonal modifiers like `DEPTH`, `RETRIEVAL_BUDGET`; output contracts like `MUST_INCLUDE` and `OUTPUT_FORMAT`). AIEX compiles those programs into a five-DIVISION COBOL-style execution plan, routes each operation to the cheapest model tier (BERT/Haiku/Sonnet/Opus) that can produce the required output, runs `EXECUTE_CODE` blocks deterministically alongside reasoning, validates outputs against contracts with severity-tiered retry and rollback, and produces a pre-execution budget report so you know what each run will cost before you spend a cent. Typical AILang programs run on AIEX at 80-90% lower LLM cost than a naive all-Opus dispatch, with full audit trails for every transaction.
 
+For a head-to-head comparison with adjacent ecosystems (LangChain/LangGraph, DSPy, Instructor/Outlines, LiteLLM/OpenRouter, classical rules engines like Drools), see the **"How AIEX compares to other frameworks"** section in the [project README](../../README.md#how-aiex-compares-to-other-frameworks).
+
 ## Reading paths
 
 | Your situation | Read |

@@ -89,14 +89,14 @@ the loan eligibility example:
 ```
 TX                  Operation   Retrieval  Model             Est. Cost  Est. Latency
 tx-1-affordability  CODE        NONE       local-code        $0.0000    100ms
-tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6 $0.0180    4000ms
+tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6 $0.0144    4000ms
 tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6   $0.0135    6000ms
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6   $0.0115    6000ms
+tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6   $0.0162    6000ms
 tx-5-audit          CODE        NONE       local-code        $0.0000    100ms
 ```
 
 Two of the five transactions cost nothing because they are code.
-The savings over the all-Opus baseline -- 88.1% on this program --
+The savings over the all-Opus baseline -- 87.8% on this program --
 are partly the routing story told in
 [chapter 11](11_multi_model_routing.md) and partly the fact that
 deterministic steps were not sent to an LLM at all.

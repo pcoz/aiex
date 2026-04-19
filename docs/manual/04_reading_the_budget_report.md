@@ -141,7 +141,7 @@ token counts and network conditions.
   optimization. This uses a fixed assumption of 3,000 input + 1,000
   output tokens per call, priced at Opus rates -- roughly $0.12 per
   transaction. This is the number that makes the savings meaningful;
-  without it, "$0.043 total" is just a number.
+  without it, "$0.044 total" is just a number.
 - **Savings %.** `(1 - total / baseline) * 100`.
 - **Estimated latency.** The sum of sequential transactions plus the
   `max()` within each parallel group -- *not* the naive sum. See
@@ -244,15 +244,15 @@ for hard rule checks, a `WEIGH` for borderline judgment, and a
 Transactions: 5
 
   TX                         Operation   Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-  tx-1-affordability         CODE        NONE       python                      0  $0.0000    10ms
-  tx-2-hard_eligibility      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0180    4000ms
+  tx-1-affordability         CODE        NONE       local-code                  0  $0.0000    10ms
+  tx-2-hard_eligibility      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0144    4000ms
   tx-3-soft_factors          WEIGH       NONE       claude-opus-4-6           666  $0.0135    6000ms
-  tx-4-final_decision        SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0115    6000ms
-  tx-5-audit                 CODE        NONE       python                      0  $0.0000    10ms
+  tx-4-final_decision        SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0162    6000ms
+  tx-5-audit                 CODE        NONE       local-code                  0  $0.0000    10ms
 
-  Total estimated cost:    $0.0430
+  Total estimated cost:    $0.0441
   vs. all-Opus baseline:   $0.3600
-  Savings: 88.1%
+  Savings: 87.8%
   Estimated latency:       16020ms
 ```
 
@@ -275,12 +275,12 @@ A few things stand out:
 - **`SYNTHESIZE` chose Opus.** Integration of the hard + soft outputs
   into a single regulated decision is a case where you do not want
   the model cutting corners. 535 neurons (1400 minus 865 savings).
-- **Total: $0.043, saving 88.1%.** The baseline -- all-Opus -- would
+- **Total: $0.044, saving 87.8%.** The baseline -- all-Opus -- would
   be $0.36. The saving comes from sending nothing to an LLM that does
   not need one (the two Python blocks), sending `DEDUCE` to Sonnet,
   and reserving Opus for the two operations that genuinely need it.
 
-That 88.1% saving is not a marketing claim. It is a direct
+That 87.8% saving is not a marketing claim. It is a direct
 consequence of routing being a compile-time decision made per
 operation, with the accounting visible in the report. When you tune
 the program -- change `DEPTH`, change `RETRIEVAL_BUDGET`, split one

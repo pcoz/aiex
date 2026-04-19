@@ -81,6 +81,14 @@ Two things to keep in sync when you edit the pool:
    Update them when pricing changes, or the "estimated cost" column
    will drift from reality.
 
+Note: the shipping `routing.py` `DEFAULT_MODEL_POOL` uses dated
+model IDs (for example `claude-sonnet-4-20250514`, `claude-haiku-4-5-...`)
+that reflect the versions available when the runtime was built;
+production users should update these to the latest Sonnet, Opus, and
+Haiku IDs available for their account (the chapter text elsewhere in
+this manual refers to those models by their short, undated names
+like `claude-sonnet-4-6`).
+
 There is a separate layer in `src/aiex/runtime/dispatch.py` called
 `MODEL_ID_MAP` that maps tier to a short model-ID string used during
 the actual API call. Both layers exist because the routing pool

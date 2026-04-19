@@ -162,7 +162,7 @@ SYNTHESIZE [input_a, input_b, input_c] INTO result_name WITH:
 END
 ```
 
-The `INTO` target is the result name. The AIEX spec [section 4 routing](../../AIEX_Specification_v0.1.md) lists SYNTHESIZE with the largest default neuron budget (1400) because merging is token-hungry.
+The `INTO` target is the result name. The AIEX spec [section 4 routing](../specification.md) lists SYNTHESIZE with the largest default neuron budget (1400) because merging is token-hungry.
 
 **Default routing:** `GENERATIVE_STANDARD` (Sonnet) in the current router, with temperature 0.4 for slightly creative merging. The AIEX spec notes SYNTHESIZE is one of the operations most likely to benefit from escalation to Opus -- in practice, `DEPTH: DEEP` on SYNTHESIZE is the common pattern for final-decision steps.
 
@@ -200,7 +200,7 @@ END
 
 Both `ON topic` and the `FROM` clause are optional individually but at least one anchoring input is expected in practice. The `SOURCES` list inside `WITH:` enumerates the authorities being weighed; `DIMENSIONS` names the axes along which they are compared.
 
-**Default routing:** `GENERATIVE_STANDARD` (Sonnet) in the current router with a 1300-neuron budget; the AIEX specification describes WEIGH as the most demanding operation in the hierarchy (1531 neurons in the spec's example routing table) and recommends Opus for serious authority-weighting workloads. `DEPTH: DEEP` or `DEPTH: EXHAUSTIVE` will escalate to Opus.
+**Default routing:** `GENERATIVE_STANDARD` (Sonnet) in the current router with a 1531-neuron budget (matching the AIEX specification's example routing table); the spec describes WEIGH as the most demanding operation in the hierarchy and recommends Opus for serious authority-weighting workloads. `DEPTH: DEEP` or `DEPTH: EXHAUSTIVE` will escalate to Opus.
 
 **Example** (from `loan_eligibility.ailang`):
 

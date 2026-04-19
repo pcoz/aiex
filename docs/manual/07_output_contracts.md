@@ -28,9 +28,9 @@ END
 
 This says: the model's response must contain six named concepts. If one is missing, the contract check fires.
 
-**What happens on failure:** per the AIEX contract spec ([`AIEX_Specification_v0.1.md`](../../AIEX_Specification_v0.1.md) section 6), MUST_INCLUDE violations are assigned severity `MAJOR` by default. Severity MAJOR triggers a **retry with reinforced prompt**: the runtime re-dispatches the same operation with an appended instruction along the lines of "CRITICAL INSTRUCTION: your previous response violated the following boundary: {violation}. You MUST include {concept}." The retry count is bounded (default max 2); if retries are exhausted, the severity escalates to CRITICAL and the transaction rolls back.
+**What happens on failure:** per the AIEX contract spec ([`specification.md`](../specification.md) section 6), MUST_INCLUDE violations are assigned severity `CRITICAL` by default in the shipping compiler (see `compiler/compiler.py:315`, which maps MUST_INCLUDE items to CRITICAL). A CRITICAL failure triggers an immediate rollback of the transaction -- state is not modified, no retry is issued, and the runtime logs the violation for the audit trail. The caller is expected to re-issue the operation (typically with stronger premises or tighter wording) rather than the runtime silently retrying.
 
-This means MUST_INCLUDE is cheap when the model is cooperative (one dispatch), moderately expensive when the model drops a concept (up to three dispatches), and rollback-costly only if the model cannot produce the required content at all -- usually a sign the operation was miscompiled or the premises were insufficient.
+This means MUST_INCLUDE is cheap when the model is cooperative (one dispatch and commit) and rollback-costly when the model cannot produce the required content -- usually a sign the operation was miscompiled, the premises were insufficient, or the concept list is asking for something the evidence does not support.
 
 ## CANNOT_INCLUDE -- prohibited concepts
 
@@ -108,9 +108,9 @@ Notice how every decision-critical field is constrained to an enum: the model ca
 
 The contract outcomes are graduated, not binary. From the AIEX spec:
 
-- **CRITICAL**: transaction rolls back. State is not modified. The operation did not happen. `OUTPUT_FORMAT` schema violations are CRITICAL by default -- a malformed JSON response is worse than no response, because downstream code would crash reading it.
+- **CRITICAL**: transaction rolls back. State is not modified. The operation did not happen. `OUTPUT_FORMAT` schema violations are CRITICAL by default -- a malformed JSON response is worse than no response, because downstream code would crash reading it. `MUST_INCLUDE` violations are also CRITICAL by default in the shipping compiler (see `compiler/compiler.py:315`, which maps every MUST_INCLUDE entry to CRITICAL) -- a missing required concept means the operation did not meet its contract and the caller needs to re-issue with stronger premises.
 
-- **MAJOR**: transaction retries with reinforced prompt, up to `max_retries` (default 2). The reinforced prompt prepends or appends an explicit instruction about the violated boundary. After max retries, severity escalates to CRITICAL and the transaction rolls back. `MUST_INCLUDE` violations are MAJOR.
+- **MAJOR**: transaction retries with reinforced prompt, up to `max_retries` (default 2). The reinforced prompt prepends or appends an explicit instruction about the violated boundary. After max retries, severity escalates to CRITICAL and the transaction rolls back. MAJOR is available to contract authors who want a retry tier for their own checks; none of the three standard contract slots (`OUTPUT_FORMAT`, `MUST_INCLUDE`, `CANNOT_INCLUDE`) default to MAJOR in the shipping compiler.
 
 - **MINOR**: transaction commits with a logged warning. The boundary was violated, but the violation is not serious enough to reject the response. `CANNOT_INCLUDE` is currently MINOR in the shipping runtime (see P3 above); the digest-format contract is MINOR (a slightly-over-length digest gets truncated and committed).
 
@@ -189,9 +189,9 @@ DEDUCE hard_eligibility FROM [eligibility_rules, product, affordability_metrics]
 END
 ```
 
-A response to this operation goes through three checks in sequence. First, the schema validator confirms the JSON has all eleven fields with the right types, and that every `TEXT IN [...]` field contains an allowed value. If any structural check fails, CRITICAL: rollback. Second, the `CHECK-PRESENT` scan confirms the six required concepts are mentioned somewhere in the response. If one is missing, MAJOR: retry with reinforcement. Third, the CANNOT_INCLUDE scan looks for forbidden speculation. If it finds some, currently MINOR: commit with warning (until BERT-backed validation is enabled).
+A response to this operation goes through three checks in sequence. First, the schema validator confirms the JSON has all eleven fields with the right types, and that every `TEXT IN [...]` field contains an allowed value. If any structural check fails, CRITICAL: rollback. Second, the `CHECK-PRESENT` scan confirms the six required concepts are mentioned somewhere in the response. If one is missing, that is also CRITICAL by default (the compiler assigns MUST_INCLUDE items severity CRITICAL) and the transaction rolls back -- no silent retry, just a logged violation for the caller to act on. Third, the CANNOT_INCLUDE scan looks for forbidden speculation. If it finds some, currently MINOR: commit with warning (until BERT-backed validation is enabled).
 
-A response that passes all three commits atomically to `hard_eligibility`, and the pipeline moves on. A response that fails at the schema boundary was never committed; no downstream operation will ever see a broken `hard_eligibility`.
+A response that passes all three commits atomically to `hard_eligibility`, and the pipeline moves on. A response that fails at the schema or MUST_INCLUDE boundary was never committed; no downstream operation will ever see a broken `hard_eligibility`.
 
 That atomicity -- either the operation committed valid output or it didn't happen -- is what makes AILang programs auditable. Every transaction's response either matched its declared contract or was logged, rolled back, and replaced. The audit trail for a program run is the list of transactions that committed and the contract each committed against. No hidden state, no silent drift.
 
