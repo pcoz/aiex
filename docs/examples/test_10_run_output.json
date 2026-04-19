@@ -1,0 +1,256 @@
+{
+  "variables": {
+    "premise_1": "Under Section 232 of the Trade Expansion Act of 1962, the President may impose tariffs on imports that threaten to impair national security, including steel and aluminum products.",
+    "premise_2": "The United States-Mexico-Canada Agreement (USMCA) provides preferential tariff treatment for goods that meet the agreement's rules of origin, including a regional value content threshold of 70% for steel products to qualify for tariff-free treatment.",
+    "premise_3": "Anti-dumping duties are imposed when a foreign manufacturer sells goods in the US at less than fair value (LTFV), determined by comparing the export price to the normal value in the home market. The US Department of Commerce conducts LTFV investigations.",
+    "premise_4": "Countervailing duties (CVDs) are imposed when a foreign government provides subsidies to its domestic producers that cause or threaten material injury to a US domestic industry. The International Trade Commission (ITC) determines material injury.",
+    "premise_5": "A product is classified under the Harmonized Tariff Schedule (HTS) for duty determination. Hot-rolled steel coils fall under HTS Chapter 72, subheading 7208. The applicable duty rate depends on the country of origin, trade agreements in force, and any active anti-dumping or countervailing duty orders.",
+    "case_facts": {
+      "exporter": "Northern Steel Corp., Hamilton, Ontario, Canada",
+      "importer": "Pacific Construction Supply, Seattle, Washington, USA",
+      "product": "Hot-rolled carbon steel coils, 3mm thickness, SAE 1020 grade",
+      "hts_classification": "7208.27.00",
+      "shipment_value": "$2,400,000 USD (FOB Hamilton)",
+      "quantity": "1,200 metric tons",
+      "normal_value_canada": "$2,100 per metric ton in Canadian domestic market",
+      "export_price": "$2,000 per metric ton to US buyer",
+      "price_difference": "Export price is $100/ton below Canadian domestic price (4.76% margin)",
+      "regional_value_content": "82% \u2014 manufactured from iron ore mined in Labrador, processed in Hamilton",
+      "canadian_government_subsidies": "Northern Steel received CAD $15 million provincial grant for facility modernization in 2024 under Ontario's Manufacturing Innovation Fund",
+      "active_trade_orders": "The US has active AD/CVD orders on certain hot-rolled steel from multiple countries; status of Canadian orders requires verification",
+      "shipment_date": "2026-03-15"
+    },
+    "tariff_applicability_none": {
+      "tariffs_apply": "partially_applicable",
+      "section_232_status": "Section 232 is potentially applicable. Premise 1 establishes that Section 232 authorizes the President to impose tariffs on steel imports that threaten national security. The product is hot-rolled carbon steel coils (HTS 7208.27.00), which falls squarely within the steel product category referenced in Premise 1. The exporter is Canadian, and no premise states that Canada is currently exempt from Section 232 tariffs on steel. However, no premise explicitly confirms that an active Section 232 tariff order is currently in force against Canadian steel imports as of the shipment date of 2026-03-15. The premises establish the legal authority and product eligibility but do not confirm the current enforcement status against Canada specifically. Therefore, Section 232 applicability is legally established as possible but cannot be confirmed as actively imposed without additional data.",
+      "usmca_qualification": true,
+      "anti_dumping_risk": "moderate",
+      "cvd_risk": "moderate",
+      "reasoning_chain": [
+        "STEP 1 \u2014 PREMISE EVALUATION: Five premises are provided. Premise 1 establishes Section 232 authority over steel imports. Premise 2 establishes USMCA preferential treatment with a 70% regional value content (RVC) threshold for steel. Premise 3 establishes the LTFV standard for anti-dumping duties. Premise 4 establishes the subsidy-plus-injury standard for CVDs. Premise 5 establishes HTS classification rules and confirms hot-rolled steel coils fall under HTS Chapter 72, subheading 7208.",
+        "STEP 2 \u2014 HTS CLASSIFICATION: The product is hot-rolled carbon steel coils classified under HTS 7208.27.00. Premise 5 confirms that hot-rolled steel coils fall under HTS Chapter 72, subheading 7208. The provided classification 7208.27.00 is consistent with this premise. Classification is confirmed as within scope.",
+        "STEP 3 \u2014 SECTION 232 ANALYSIS: Premise 1 establishes that Section 232 authorizes tariffs on steel imports threatening national security. The product is steel; the exporter is Canadian. No premise states Canada is exempt from Section 232 on steel, nor does any premise confirm an active Section 232 order against Canada is in force as of March 2026. The legal authority exists and the product qualifies by type. However, actual imposition cannot be confirmed from the premises alone. Section 232 is potentially applicable but enforcement status is insufficiently defined by the given premises.",
+        "STEP 4 \u2014 USMCA QUALIFICATION ANALYSIS: Premise 2 requires a regional value content (RVC) of at least 70% for steel products to qualify for USMCA preferential tariff-free treatment. The shipment data states RVC is 82%, derived from iron ore mined in Labrador and processed in Hamilton, Ontario. 82% exceeds the 70% threshold stated in Premise 2. Therefore, the product qualifies for USMCA preferential treatment based on the RVC criterion. USMCA qualification is TRUE.",
+        "STEP 5 \u2014 ANTI-DUMPING MARGIN ANALYSIS: Premise 3 defines dumping as selling in the US at less than fair value (LTFV), determined by comparing export price to normal value in the home market. The shipment data provides: normal value in Canada = $2,100/metric ton; export price to US = $2,000/metric ton. The difference is $100/ton, representing a 4.76% margin (as stated in the data). Since the export price ($2,000) is below the normal value ($2,100), the LTFV condition from Premise 3 is met on its face. This constitutes a positive dumping margin. The data also notes that active AD/CVD orders exist on certain hot-rolled steel from multiple countries, but the status of Canadian-specific orders requires verification. The combination of a confirmed price differential meeting the LTFV definition and the existence of active orders in the sector (though Canadian applicability is unconfirmed) supports a MODERATE anti-dumping risk rating \u2014 the margin exists but is relatively small (4.76%) and Canadian order status is unverified.",
+        "STEP 6 \u2014 CVD SUBSIDY ANALYSIS: Premise 4 requires two elements for CVD imposition: (a) a foreign government subsidy to domestic producers, and (b) material injury or threat thereof to a US domestic industry, as determined by the ITC. The shipment data confirms Northern Steel Corp. received CAD $15 million from the Ontario provincial government under the Manufacturing Innovation Fund in 2024 for facility modernization. This constitutes a government subsidy to a domestic producer as described in Premise 4. However, no premise or data point addresses whether the ITC has made a material injury determination with respect to Canadian hot-rolled steel or this specific subsidy. The subsidy element is confirmed; the injury determination element is unresolved from the given premises. CVD risk is rated MODERATE \u2014 one of the two required elements is confirmed, the other is insufficiently addressed.",
+        "STEP 7 \u2014 USMCA INTERACTION WITH AD/CVD: Premise 2 provides for preferential tariff treatment under USMCA for qualifying goods. USMCA qualification (RVC 82% > 70% threshold) is established. However, no premise states that USMCA qualification eliminates or overrides anti-dumping or countervailing duties. Premises 3 and 4 describe AD and CVD as separate duty mechanisms. Therefore, USMCA preferential treatment may reduce or eliminate standard MFN tariffs but does not, based on the given premises, preclude AD or CVD liability.",
+        "STEP 8 \u2014 FINAL DETERMINATION: (a) Standard MFN tariffs: Likely reduced or eliminated due to USMCA qualification (RVC 82% > 70% threshold per Premise 2). (b) Section 232 tariffs: Legally possible under Premise 1 for this steel product, but active enforcement against Canada as of March 2026 cannot be confirmed from the premises \u2014 insufficient information to confirm or deny. (c) Anti-dumping duties: A positive LTFV margin of 4.76% exists per Premise 3 analysis; active AD orders exist in the sector but Canadian applicability is unverified \u2014 moderate risk. (d) CVDs: A qualifying government subsidy exists per Premise 4 analysis; ITC injury determination status is unknown \u2014 moderate risk. Overall: tariffs are PARTIALLY APPLICABLE \u2014 USMCA exempts standard duties, but Section 232, AD, and CVD exposure cannot be ruled out."
+      ],
+      "terminology_gaps": [
+        "Active Section 232 order status against Canada as of 2026-03-15: The premises establish the legal authority but do not confirm whether a Section 232 tariff is currently in force against Canadian steel imports on the shipment date.",
+        "Active AD/CVD orders specific to Canada: The shipment data acknowledges that active AD/CVD orders exist on hot-rolled steel from multiple countries but states that the status of Canadian-specific orders requires verification. No premise resolves this.",
+        "ITC material injury determination: Premise 4 requires an ITC material injury finding for CVD imposition. No data or premise confirms whether such a determination has been made with respect to Canadian hot-rolled steel or the Ontario Manufacturing Innovation Fund subsidy.",
+        "USMCA interaction with Section 232: No premise addresses whether USMCA preferential status provides any exemption from or mitigation of Section 232 tariffs.",
+        "Currency conversion for normal value comparison: The normal value is stated in Canadian domestic market terms but no exchange rate is provided; the premises do not address currency normalization methodology for LTFV calculations.",
+        "Specificity of the Ontario Manufacturing Innovation Fund subsidy: Premise 4 references subsidies to domestic producers generally, but does not define thresholds or specificity criteria that would determine whether this particular grant constitutes an actionable subsidy under US CVD law."
+      ],
+      "confidence_level": "moderate"
+    },
+    "tariff_applicability_minimal": {
+      "tariffs_apply": "partially_applicable",
+      "section_232_status": "Section 232 tariffs on steel products are potentially applicable. Premise 1 establishes that the President may impose tariffs on steel imports threatening national security under Section 232. Hot-rolled steel coils (HTS 7208.27.00) fall squarely within the steel product category subject to Section 232 authority. However, the premises do not specify whether a current Section 232 proclamation with a specific rate is in force for Canadian steel imports, nor whether any country-specific exemption or quota arrangement applies to Canada. The active trade orders note in the shipment data acknowledges that verification is required. Based solely on the premises provided, Section 232 authority exists and the product is within scope, but the precise current applicability to Canadian-origin steel cannot be confirmed without additional information about active proclamations.",
+      "usmca_qualification": true,
+      "anti_dumping_risk": "moderate",
+      "cvd_risk": "moderate",
+      "reasoning_chain": [
+        "PREMISE EVALUATION \u2014 Premise 1: Section 232 authority exists for steel imports threatening national security. The product (hot-rolled carbon steel coils, HTS 7208.27.00) is a steel product. This premise is directly applicable to the shipment.",
+        "PREMISE EVALUATION \u2014 Premise 2: USMCA provides preferential tariff treatment for goods meeting rules of origin, with a 70% regional value content (RVC) threshold for steel products. This premise is directly applicable given the Canadian origin of the goods.",
+        "PREMISE EVALUATION \u2014 Premise 3: Anti-dumping duties apply when export price is below normal value (LTFV). The shipment data provides specific pricing: normal value in Canada is $2,100/MT; export price to US is $2,000/MT. This premise is directly applicable and the data is sufficient to assess LTFV risk.",
+        "PREMISE EVALUATION \u2014 Premise 4: CVDs apply when foreign government subsidies cause or threaten material injury to US industry. The shipment data discloses a CAD $15 million provincial grant received by Northern Steel in 2024. This premise is directly applicable.",
+        "PREMISE EVALUATION \u2014 Premise 5: HTS classification governs duty determination. The product is classified under 7208.27.00, which falls within HTS Chapter 72, subheading 7208, consistent with hot-rolled steel coils as stated in Premise 5. This premise is directly applicable.",
+        "USMCA QUALIFICATION ANALYSIS: Premise 2 sets the RVC threshold for steel products at 70%. The shipment data states an RVC of 82%, derived from iron ore mined in Labrador and processed in Hamilton, Ontario. Since 82% exceeds the 70% threshold, the product meets the USMCA rules of origin requirement for steel. Therefore, USMCA qualification is satisfied, and the product is eligible for preferential (potentially tariff-free) treatment under USMCA, subject to proper certification and documentation.",
+        "SECTION 232 APPLICABILITY: Even where USMCA qualification is met, Section 232 tariffs operate under a separate statutory authority (Trade Expansion Act of 1962, national security basis) and may apply independently of trade agreement preferences. The premises do not resolve whether USMCA preference fully displaces Section 232 tariffs on Canadian steel, as that determination depends on active proclamations and any negotiated exemptions not specified in the premises. The premises establish the authority exists and the product is in scope; the precise rate and exemption status for Canada is flagged as requiring verification per the shipment data itself.",
+        "ANTI-DUMPING MARGIN ANALYSIS: Premise 3 defines LTFV as export price below normal value in the home market. Normal value (Canada): $2,100/MT. Export price (US): $2,000/MT. Price difference: $100/MT below normal value, representing a 4.76% dumping margin (as stated in shipment data). A positive dumping margin exists, satisfying the LTFV condition. However, the imposition of AD duties also requires an active AD order and an ITC material injury determination. The shipment data notes that the status of Canadian AD orders requires verification. Therefore, while a dumping margin exists on the facts provided, whether an active AD order covers this product from Canada is unconfirmed. Risk is assessed as moderate: the margin exists but order applicability is uncertain.",
+        "CVD SUBSIDY ANALYSIS: Premise 4 requires (a) a foreign government subsidy and (b) material injury or threat thereof to US industry, with ITC determining injury. The shipment data discloses that Northern Steel received a CAD $15 million provincial grant from Ontario's Manufacturing Innovation Fund in 2024 for facility modernization. A provincial government grant to a steel producer is the type of subsidy that could form the basis of a CVD investigation. However, the premises do not confirm whether this specific grant has been investigated, whether a CVD order is active against Canadian hot-rolled steel, or whether the ITC has made a material injury determination. The existence of the subsidy is confirmed by the premises; the active order status is unverified. Risk is assessed as moderate.",
+        "ACTIVE TRADE ORDERS NOTE: The shipment data explicitly states that the US has active AD/CVD orders on certain hot-rolled steel from multiple countries, but that the status of Canadian-specific orders requires verification. The premises do not supply this verification. This is the primary source of uncertainty in the final determination.",
+        "FINAL TARIFF DETERMINATION: (1) USMCA: Product qualifies based on 82% RVC exceeding the 70% threshold \u2014 eligible for preferential treatment. (2) Section 232: Authority exists and product is in scope; whether Canada-specific exemption applies is not resolvable from premises alone. (3) AD duties: A 4.76% dumping margin exists on the facts; active order status for Canada unconfirmed. (4) CVD: A qualifying subsidy (provincial grant) exists; active order and injury determination status unconfirmed. Result: Tariffs are partially applicable \u2014 USMCA preference is established, but Section 232, AD, and CVD exposure cannot be fully excluded without verification of active orders and proclamations."
+      ],
+      "terminology_gaps": [
+        "The resolved terminology entries for 'US', 'Under Section', and 'Commerce' are marked as MOCK definitions and do not supply substantive content. No gap in reasoning results because the premises themselves define the relevant concepts (Section 232 authority, Commerce Department role in LTFV investigations).",
+        "The current status of any active Section 232 proclamation specifically applicable to Canadian steel imports (including any quota arrangements or exemptions negotiated between the US and Canada) is not provided in the premises and cannot be deduced.",
+        "The existence or non-existence of an active US anti-dumping order specifically covering hot-rolled carbon steel coils (HTS 7208.27.00) from Canada is not established by the premises. The shipment data flags this as requiring verification.",
+        "The existence or non-existence of an active US countervailing duty order specifically covering hot-rolled carbon steel coils from Canada, and whether the ITC has made a material injury determination with respect to Ontario provincial grants under the Manufacturing Innovation Fund, is not established by the premises.",
+        "The USMCA rules of origin certification and documentation requirements (e.g., Certificate of Origin) are referenced implicitly by Premise 2 but the specific procedural requirements are not detailed in the premises.",
+        "Whether the CAD $15 million grant constitutes a 'specific' subsidy under US CVD law (as opposed to a generally available program) is a legal determination not resolvable from the premises alone."
+      ],
+      "confidence_level": "moderate"
+    }
+  },
+  "results": {
+    "tx-1-tariff_applicability_none": {
+      "status": "COMMITTED",
+      "response": {
+        "tariffs_apply": "partially_applicable",
+        "section_232_status": "Section 232 is potentially applicable. Premise 1 establishes that Section 232 authorizes the President to impose tariffs on steel imports that threaten national security. The product is hot-rolled carbon steel coils (HTS 7208.27.00), which falls squarely within the steel product category referenced in Premise 1. The exporter is Canadian, and no premise states that Canada is currently exempt from Section 232 tariffs on steel. However, no premise explicitly confirms that an active Section 232 tariff order is currently in force against Canadian steel imports as of the shipment date of 2026-03-15. The premises establish the legal authority and product eligibility but do not confirm the current enforcement status against Canada specifically. Therefore, Section 232 applicability is legally established as possible but cannot be confirmed as actively imposed without additional data.",
+        "usmca_qualification": true,
+        "anti_dumping_risk": "moderate",
+        "cvd_risk": "moderate",
+        "reasoning_chain": [
+          "STEP 1 \u2014 PREMISE EVALUATION: Five premises are provided. Premise 1 establishes Section 232 authority over steel imports. Premise 2 establishes USMCA preferential treatment with a 70% regional value content (RVC) threshold for steel. Premise 3 establishes the LTFV standard for anti-dumping duties. Premise 4 establishes the subsidy-plus-injury standard for CVDs. Premise 5 establishes HTS classification rules and confirms hot-rolled steel coils fall under HTS Chapter 72, subheading 7208.",
+          "STEP 2 \u2014 HTS CLASSIFICATION: The product is hot-rolled carbon steel coils classified under HTS 7208.27.00. Premise 5 confirms that hot-rolled steel coils fall under HTS Chapter 72, subheading 7208. The provided classification 7208.27.00 is consistent with this premise. Classification is confirmed as within scope.",
+          "STEP 3 \u2014 SECTION 232 ANALYSIS: Premise 1 establishes that Section 232 authorizes tariffs on steel imports threatening national security. The product is steel; the exporter is Canadian. No premise states Canada is exempt from Section 232 on steel, nor does any premise confirm an active Section 232 order against Canada is in force as of March 2026. The legal authority exists and the product qualifies by type. However, actual imposition cannot be confirmed from the premises alone. Section 232 is potentially applicable but enforcement status is insufficiently defined by the given premises.",
+          "STEP 4 \u2014 USMCA QUALIFICATION ANALYSIS: Premise 2 requires a regional value content (RVC) of at least 70% for steel products to qualify for USMCA preferential tariff-free treatment. The shipment data states RVC is 82%, derived from iron ore mined in Labrador and processed in Hamilton, Ontario. 82% exceeds the 70% threshold stated in Premise 2. Therefore, the product qualifies for USMCA preferential treatment based on the RVC criterion. USMCA qualification is TRUE.",
+          "STEP 5 \u2014 ANTI-DUMPING MARGIN ANALYSIS: Premise 3 defines dumping as selling in the US at less than fair value (LTFV), determined by comparing export price to normal value in the home market. The shipment data provides: normal value in Canada = $2,100/metric ton; export price to US = $2,000/metric ton. The difference is $100/ton, representing a 4.76% margin (as stated in the data). Since the export price ($2,000) is below the normal value ($2,100), the LTFV condition from Premise 3 is met on its face. This constitutes a positive dumping margin. The data also notes that active AD/CVD orders exist on certain hot-rolled steel from multiple countries, but the status of Canadian-specific orders requires verification. The combination of a confirmed price differential meeting the LTFV definition and the existence of active orders in the sector (though Canadian applicability is unconfirmed) supports a MODERATE anti-dumping risk rating \u2014 the margin exists but is relatively small (4.76%) and Canadian order status is unverified.",
+          "STEP 6 \u2014 CVD SUBSIDY ANALYSIS: Premise 4 requires two elements for CVD imposition: (a) a foreign government subsidy to domestic producers, and (b) material injury or threat thereof to a US domestic industry, as determined by the ITC. The shipment data confirms Northern Steel Corp. received CAD $15 million from the Ontario provincial government under the Manufacturing Innovation Fund in 2024 for facility modernization. This constitutes a government subsidy to a domestic producer as described in Premise 4. However, no premise or data point addresses whether the ITC has made a material injury determination with respect to Canadian hot-rolled steel or this specific subsidy. The subsidy element is confirmed; the injury determination element is unresolved from the given premises. CVD risk is rated MODERATE \u2014 one of the two required elements is confirmed, the other is insufficiently addressed.",
+          "STEP 7 \u2014 USMCA INTERACTION WITH AD/CVD: Premise 2 provides for preferential tariff treatment under USMCA for qualifying goods. USMCA qualification (RVC 82% > 70% threshold) is established. However, no premise states that USMCA qualification eliminates or overrides anti-dumping or countervailing duties. Premises 3 and 4 describe AD and CVD as separate duty mechanisms. Therefore, USMCA preferential treatment may reduce or eliminate standard MFN tariffs but does not, based on the given premises, preclude AD or CVD liability.",
+          "STEP 8 \u2014 FINAL DETERMINATION: (a) Standard MFN tariffs: Likely reduced or eliminated due to USMCA qualification (RVC 82% > 70% threshold per Premise 2). (b) Section 232 tariffs: Legally possible under Premise 1 for this steel product, but active enforcement against Canada as of March 2026 cannot be confirmed from the premises \u2014 insufficient information to confirm or deny. (c) Anti-dumping duties: A positive LTFV margin of 4.76% exists per Premise 3 analysis; active AD orders exist in the sector but Canadian applicability is unverified \u2014 moderate risk. (d) CVDs: A qualifying government subsidy exists per Premise 4 analysis; ITC injury determination status is unknown \u2014 moderate risk. Overall: tariffs are PARTIALLY APPLICABLE \u2014 USMCA exempts standard duties, but Section 232, AD, and CVD exposure cannot be ruled out."
+        ],
+        "terminology_gaps": [
+          "Active Section 232 order status against Canada as of 2026-03-15: The premises establish the legal authority but do not confirm whether a Section 232 tariff is currently in force against Canadian steel imports on the shipment date.",
+          "Active AD/CVD orders specific to Canada: The shipment data acknowledges that active AD/CVD orders exist on hot-rolled steel from multiple countries but states that the status of Canadian-specific orders requires verification. No premise resolves this.",
+          "ITC material injury determination: Premise 4 requires an ITC material injury finding for CVD imposition. No data or premise confirms whether such a determination has been made with respect to Canadian hot-rolled steel or the Ontario Manufacturing Innovation Fund subsidy.",
+          "USMCA interaction with Section 232: No premise addresses whether USMCA preferential status provides any exemption from or mitigation of Section 232 tariffs.",
+          "Currency conversion for normal value comparison: The normal value is stated in Canadian domestic market terms but no exchange rate is provided; the premises do not address currency normalization methodology for LTFV calculations.",
+          "Specificity of the Ontario Manufacturing Innovation Fund subsidy: Premise 4 references subsidies to domestic producers generally, but does not define thresholds or specificity criteria that would determine whether this particular grant constitutes an actionable subsidy under US CVD law."
+        ],
+        "confidence_level": "moderate"
+      }
+    },
+    "tx-2-tariff_applicability_minimal": {
+      "status": "COMMITTED",
+      "response": {
+        "tariffs_apply": "partially_applicable",
+        "section_232_status": "Section 232 tariffs on steel products are potentially applicable. Premise 1 establishes that the President may impose tariffs on steel imports threatening national security under Section 232. Hot-rolled steel coils (HTS 7208.27.00) fall squarely within the steel product category subject to Section 232 authority. However, the premises do not specify whether a current Section 232 proclamation with a specific rate is in force for Canadian steel imports, nor whether any country-specific exemption or quota arrangement applies to Canada. The active trade orders note in the shipment data acknowledges that verification is required. Based solely on the premises provided, Section 232 authority exists and the product is within scope, but the precise current applicability to Canadian-origin steel cannot be confirmed without additional information about active proclamations.",
+        "usmca_qualification": true,
+        "anti_dumping_risk": "moderate",
+        "cvd_risk": "moderate",
+        "reasoning_chain": [
+          "PREMISE EVALUATION \u2014 Premise 1: Section 232 authority exists for steel imports threatening national security. The product (hot-rolled carbon steel coils, HTS 7208.27.00) is a steel product. This premise is directly applicable to the shipment.",
+          "PREMISE EVALUATION \u2014 Premise 2: USMCA provides preferential tariff treatment for goods meeting rules of origin, with a 70% regional value content (RVC) threshold for steel products. This premise is directly applicable given the Canadian origin of the goods.",
+          "PREMISE EVALUATION \u2014 Premise 3: Anti-dumping duties apply when export price is below normal value (LTFV). The shipment data provides specific pricing: normal value in Canada is $2,100/MT; export price to US is $2,000/MT. This premise is directly applicable and the data is sufficient to assess LTFV risk.",
+          "PREMISE EVALUATION \u2014 Premise 4: CVDs apply when foreign government subsidies cause or threaten material injury to US industry. The shipment data discloses a CAD $15 million provincial grant received by Northern Steel in 2024. This premise is directly applicable.",
+          "PREMISE EVALUATION \u2014 Premise 5: HTS classification governs duty determination. The product is classified under 7208.27.00, which falls within HTS Chapter 72, subheading 7208, consistent with hot-rolled steel coils as stated in Premise 5. This premise is directly applicable.",
+          "USMCA QUALIFICATION ANALYSIS: Premise 2 sets the RVC threshold for steel products at 70%. The shipment data states an RVC of 82%, derived from iron ore mined in Labrador and processed in Hamilton, Ontario. Since 82% exceeds the 70% threshold, the product meets the USMCA rules of origin requirement for steel. Therefore, USMCA qualification is satisfied, and the product is eligible for preferential (potentially tariff-free) treatment under USMCA, subject to proper certification and documentation.",
+          "SECTION 232 APPLICABILITY: Even where USMCA qualification is met, Section 232 tariffs operate under a separate statutory authority (Trade Expansion Act of 1962, national security basis) and may apply independently of trade agreement preferences. The premises do not resolve whether USMCA preference fully displaces Section 232 tariffs on Canadian steel, as that determination depends on active proclamations and any negotiated exemptions not specified in the premises. The premises establish the authority exists and the product is in scope; the precise rate and exemption status for Canada is flagged as requiring verification per the shipment data itself.",
+          "ANTI-DUMPING MARGIN ANALYSIS: Premise 3 defines LTFV as export price below normal value in the home market. Normal value (Canada): $2,100/MT. Export price (US): $2,000/MT. Price difference: $100/MT below normal value, representing a 4.76% dumping margin (as stated in shipment data). A positive dumping margin exists, satisfying the LTFV condition. However, the imposition of AD duties also requires an active AD order and an ITC material injury determination. The shipment data notes that the status of Canadian AD orders requires verification. Therefore, while a dumping margin exists on the facts provided, whether an active AD order covers this product from Canada is unconfirmed. Risk is assessed as moderate: the margin exists but order applicability is uncertain.",
+          "CVD SUBSIDY ANALYSIS: Premise 4 requires (a) a foreign government subsidy and (b) material injury or threat thereof to US industry, with ITC determining injury. The shipment data discloses that Northern Steel received a CAD $15 million provincial grant from Ontario's Manufacturing Innovation Fund in 2024 for facility modernization. A provincial government grant to a steel producer is the type of subsidy that could form the basis of a CVD investigation. However, the premises do not confirm whether this specific grant has been investigated, whether a CVD order is active against Canadian hot-rolled steel, or whether the ITC has made a material injury determination. The existence of the subsidy is confirmed by the premises; the active order status is unverified. Risk is assessed as moderate.",
+          "ACTIVE TRADE ORDERS NOTE: The shipment data explicitly states that the US has active AD/CVD orders on certain hot-rolled steel from multiple countries, but that the status of Canadian-specific orders requires verification. The premises do not supply this verification. This is the primary source of uncertainty in the final determination.",
+          "FINAL TARIFF DETERMINATION: (1) USMCA: Product qualifies based on 82% RVC exceeding the 70% threshold \u2014 eligible for preferential treatment. (2) Section 232: Authority exists and product is in scope; whether Canada-specific exemption applies is not resolvable from premises alone. (3) AD duties: A 4.76% dumping margin exists on the facts; active order status for Canada unconfirmed. (4) CVD: A qualifying subsidy (provincial grant) exists; active order and injury determination status unconfirmed. Result: Tariffs are partially applicable \u2014 USMCA preference is established, but Section 232, AD, and CVD exposure cannot be fully excluded without verification of active orders and proclamations."
+        ],
+        "terminology_gaps": [
+          "The resolved terminology entries for 'US', 'Under Section', and 'Commerce' are marked as MOCK definitions and do not supply substantive content. No gap in reasoning results because the premises themselves define the relevant concepts (Section 232 authority, Commerce Department role in LTFV investigations).",
+          "The current status of any active Section 232 proclamation specifically applicable to Canadian steel imports (including any quota arrangements or exemptions negotiated between the US and Canada) is not provided in the premises and cannot be deduced.",
+          "The existence or non-existence of an active US anti-dumping order specifically covering hot-rolled carbon steel coils (HTS 7208.27.00) from Canada is not established by the premises. The shipment data flags this as requiring verification.",
+          "The existence or non-existence of an active US countervailing duty order specifically covering hot-rolled carbon steel coils from Canada, and whether the ITC has made a material injury determination with respect to Ontario provincial grants under the Manufacturing Innovation Fund, is not established by the premises.",
+          "The USMCA rules of origin certification and documentation requirements (e.g., Certificate of Origin) are referenced implicitly by Premise 2 but the specific procedural requirements are not detailed in the premises.",
+          "Whether the CAD $15 million grant constitutes a 'specific' subsidy under US CVD law (as opposed to a generally available program) is a legal determination not resolvable from the premises alone."
+        ],
+        "confidence_level": "moderate"
+      }
+    },
+    "tx-3-tariff_applicability_standard": {
+      "status": "ROLLED_BACK",
+      "response": null
+    },
+    "tx-4-compare_retrieval_budget_validation_criteria": {
+      "status": "ROLLED_BACK",
+      "response": null
+    }
+  },
+  "log": [
+    {
+      "ts": "2026-04-16T16:32:11.052717+00:00",
+      "event": "set_variable",
+      "name": "premise_1",
+      "value_type": "str"
+    },
+    {
+      "ts": "2026-04-16T16:32:11.052727+00:00",
+      "event": "set_variable",
+      "name": "premise_2",
+      "value_type": "str"
+    },
+    {
+      "ts": "2026-04-16T16:32:11.052730+00:00",
+      "event": "set_variable",
+      "name": "premise_3",
+      "value_type": "str"
+    },
+    {
+      "ts": "2026-04-16T16:32:11.052732+00:00",
+      "event": "set_variable",
+      "name": "premise_4",
+      "value_type": "str"
+    },
+    {
+      "ts": "2026-04-16T16:32:11.052734+00:00",
+      "event": "set_variable",
+      "name": "premise_5",
+      "value_type": "str"
+    },
+    {
+      "ts": "2026-04-16T16:32:11.052736+00:00",
+      "event": "set_variable",
+      "name": "case_facts",
+      "value_type": "dict"
+    },
+    {
+      "ts": "2026-04-16T16:32:44.562076+00:00",
+      "event": "commit_result",
+      "id": "tx-1-tariff_applicability_none",
+      "name": "tariff_applicability_none",
+      "status": "COMMITTED"
+    },
+    {
+      "ts": "2026-04-16T16:32:44.562090+00:00",
+      "event": "set_variable",
+      "name": "tariff_applicability_none",
+      "value_type": "dict"
+    },
+    {
+      "ts": "2026-04-16T16:32:44.562095+00:00",
+      "event": "COMMIT",
+      "tx": "tx-1-tariff_applicability_none",
+      "status": "COMMITTED",
+      "message": "TX tx-1-tariff_applicability_none: COMMITTED"
+    },
+    {
+      "ts": "2026-04-16T16:33:19.116440+00:00",
+      "event": "commit_result",
+      "id": "tx-2-tariff_applicability_minimal",
+      "name": "tariff_applicability_minimal",
+      "status": "COMMITTED"
+    },
+    {
+      "ts": "2026-04-16T16:33:19.116465+00:00",
+      "event": "set_variable",
+      "name": "tariff_applicability_minimal",
+      "value_type": "dict"
+    },
+    {
+      "ts": "2026-04-16T16:33:19.116475+00:00",
+      "event": "COMMIT",
+      "tx": "tx-2-tariff_applicability_minimal",
+      "status": "COMMITTED",
+      "message": "TX tx-2-tariff_applicability_minimal: COMMITTED"
+    },
+    {
+      "ts": "2026-04-16T16:34:00.128912+00:00",
+      "event": "commit_result",
+      "id": "tx-3-tariff_applicability_standard",
+      "name": "tariff_applicability_standard",
+      "status": "ROLLED_BACK"
+    },
+    {
+      "ts": "2026-04-16T16:34:00.128929+00:00",
+      "event": "ROLLBACK",
+      "tx": "tx-3-tariff_applicability_standard",
+      "status": "ROLLED_BACK",
+      "message": "TX tx-3-tariff_applicability_standard: ROLLED_BACK"
+    },
+    {
+      "ts": "2026-04-16T16:34:21.484172+00:00",
+      "event": "commit_result",
+      "id": "tx-4-compare_retrieval_budget_validation_criteria",
+      "name": "compare_retrieval_budget_validation_criteria",
+      "status": "ROLLED_BACK"
+    },
+    {
+      "ts": "2026-04-16T16:34:21.484194+00:00",
+      "event": "ROLLBACK",
+      "tx": "tx-4-compare_retrieval_budget_validation_criteria",
+      "status": "ROLLED_BACK",
+      "message": "TX tx-4-compare_retrieval_budget_validation_criteria: ROLLED_BACK"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+You are executing an INTELLIGENTLY operation in an AILang program.
+No specific reasoning type was declared, so you must determine the most appropriate reasoning approach for the task.
+First, assess what kind of reasoning the inputs and query require: deduction from premises, causal tracing, comparison and ranking, authority-weighted evaluation, synthesis of perspectives, or direct factual retrieval.
+Then apply that reasoning approach with full rigor, as if the specific operation type had been declared.
+State which reasoning approach you selected and why before presenting your analysis.
+Apply all specified constraints as strictly as if the reasoning type had been explicitly declared.
+{RETRIEVAL_MODIFIER}
+{DEPTH_SUFFIX}
+{STYLE_PREFIX}
+{BOUNDARY_INSTRUCTIONS}
+
+You will be given these inputs:
+{INPUTS}
+
+Respond in valid JSON matching this schema:
+{OUTPUT_SCHEMA}

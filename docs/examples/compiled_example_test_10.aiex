@@ -1,0 +1,1367 @@
+*> ================================================================
+*> AIEX Compiled Output
+*> ================================================================
+*> Source:       ailang-v0.8.2/tests/test_10_retrieval_budget.ailang
+*> Compiled by:  ailang-compiler v0.1 (manual demonstration)
+*> Compiled at:  2026-04-16T15:00:00Z
+*> ================================================================
+*> This file is the executable form of the AILang test program.
+*> The AIEX runtime reads this file and executes it transaction
+*> by transaction, dispatching to the appropriate model (BERT or
+*> generative) and validating each response against its contract.
+*> ================================================================
+
+
+*> ============================================================
+*> PROGRAM DIVISION
+*> ============================================================
+*> Compiled from: #ailang v0.8.2 header + file metadata
+*> Every AIEX program begins with identification.
+*> ============================================================
+
+PROGRAM DIVISION.
+    PROGRAM-ID.         test-10-retrieval-budget.
+    SOURCE-SPEC.        AILang v0.8.2.
+    COMPILED-FROM.      "ailang-v0.8.2/tests/test_10_retrieval_budget.ailang".
+    COMPILED-AT.        2026-04-16T15:00:00Z.
+    TARGET-ENGINE.      claude-sonnet-4-6.
+    AUTHOR.             ailang-compiler v0.1.
+    TRACE-LEVEL.        FULL.
+    DESCRIPTION.        "International trade compliance analysis
+                         using graduated RETRIEVAL_BUDGET (NONE,
+                         MINIMAL, STANDARD) across three DEDUCE
+                         passes on identical premises, followed
+                         by a COMPARE validation.
+                         4 transactions total.".
+
+
+*> ============================================================
+*> ENGINE DIVISION
+*> ============================================================
+*> Compiled from: implicit engine defaults + AILang operation
+*> types found during AST analysis.
+*>
+*> The compiler analyzed the source and found:
+*>   - 3x DEDUCE operations → needs "deduce-logical" template
+*>   - 1x COMPARE operation → needs "compare-rank" template
+*>   - RETRIEVAL_BUDGET levels used: NONE, MINIMAL, STANDARD
+*>   - DEPTH used: STANDARD only
+*>   - No style modifiers (all default to INTELLIGENTLY)
+*>   - No REALITY_CONTEXT
+*>   - No REASONING_CONTEXT
+*>   - No THEN chains
+*>
+*> The compiler selected models:
+*>   - DEDUCE at STANDARD depth → GENERATIVE-STANDARD (Sonnet)
+*>   - COMPARE at default depth → BERT-CLASS (cross-encoder)
+*>     with FALLBACK-TO GENERATIVE-LIGHT (Haiku) because
+*>     COMPARE output requires qualitative TEXT fields
+*> ============================================================
+
+ENGINE DIVISION.
+
+    CONNECTION SECTION.
+        API-ENDPOINT-GENERATIVE.
+            URL             "https://api.anthropic.com/v1/messages".
+            API-KEY-SOURCE  ENV "ANTHROPIC_API_KEY".
+            TIMEOUT-MS      120000.
+            RETRY-POLICY    3 ATTEMPTS WITH BACKOFF 1000 2000 4000.
+
+        API-ENDPOINT-BERT.
+            URL             "https://api.inference.endpoint/v1/embed".
+            API-KEY-SOURCE  ENV "BERT_API_KEY".
+            TIMEOUT-MS      5000.
+            RETRY-POLICY    2 ATTEMPTS WITH BACKOFF 500 1000.
+
+        API-ENDPOINT-VECTOR-DB.
+            URL             "https://vectordb.internal/v1/search".
+            API-KEY-SOURCE  ENV "VECTORDB_API_KEY".
+            TIMEOUT-MS      3000.
+
+    MODEL SECTION.
+        DEFINE MODEL-POOL.
+            BERT-CLASS.
+                MODEL-ID        "colbert-v2".
+                CAPABILITY      RETRIEVAL, CLASSIFICATION, RANKING.
+                COST-PER-1K     0.00002.
+                LATENCY-CLASS   FAST.
+                MAX-TOKENS      512.
+
+            GENERATIVE-LIGHT.
+                MODEL-ID        "claude-haiku-4-5".
+                CAPABILITY      ALL.
+                COST-PER-1K-IN  0.001.
+                COST-PER-1K-OUT 0.005.
+                LATENCY-CLASS   MEDIUM.
+                MAX-TOKENS      4096.
+
+            GENERATIVE-STANDARD.
+                MODEL-ID        "claude-sonnet-4-6".
+                CAPABILITY      ALL.
+                COST-PER-1K-IN  0.003.
+                COST-PER-1K-OUT 0.015.
+                LATENCY-CLASS   MEDIUM.
+                MAX-TOKENS      8192.
+        END-POOL.
+
+    ROUTING SECTION.
+        *> Only the reasoning types actually used in this program
+        *> are included. The compiler prunes unused routes.
+
+        ROUTING-TABLE reasoning-routes.
+            WHEN DEDUCE:
+                DISPATCH-TO             GENERATIVE-STANDARD.
+                SYSTEM-PROMPT-TEMPLATE  "deduce-logical".
+                TEMPERATURE             0.2.
+                NEURON-BUDGET-FULL      1200.
+                MAX-OUTPUT-TOKENS       1536.
+            WHEN COMPARE:
+                DISPATCH-TO             BERT-CLASS.
+                ESCALATE-WHEN           OUTPUT-REQUIRES QUALITATIVE-TEXT.
+                ESCALATE-TO             GENERATIVE-LIGHT.
+                SYSTEM-PROMPT-TEMPLATE  "compare-rank".
+                TEMPERATURE             0.3.
+                NEURON-BUDGET-FULL      1050.
+                MAX-OUTPUT-TOKENS       1024.
+        END-TABLE.
+
+    RETRIEVAL-BUDGET SECTION.
+        BUDGET-TABLE retrieval-budgets.
+            WHEN NONE:
+                RETRIEVAL-NEURONS       0.
+                VECTOR-SEARCH           DISABLED.
+                PROMPT-MODIFIER         "CRITICAL INSTRUCTION: You MUST reason
+                                         ONLY from the premises and data provided
+                                         below. Do NOT use any external knowledge,
+                                         regulatory details, case law, or facts not
+                                         explicitly stated in the inputs. If the
+                                         premises are insufficient to determine
+                                         something, state 'insufficient_info'.".
+                FALLBACK-TO             MINIMAL.
+                FALLBACK-LOG            "RETRIEVAL_BUDGET: NONE could not be
+                                         honored -- operation required knowledge
+                                         recall not present in variables.".
+
+            WHEN MINIMAL:
+                RETRIEVAL-NEURONS       200.
+                VECTOR-SEARCH           ENABLED TOP-K 3.
+                VECTOR-INDEX            "terminology-definitions".
+                PROMPT-MODIFIER         "You may resolve standard terminology and
+                                         basic definitions relevant to the domain
+                                         (e.g., legal terms of art, standard
+                                         thresholds, procedural definitions). Do
+                                         NOT inject detailed external knowledge
+                                         such as specific case outcomes, current
+                                         regulatory orders, historical precedents,
+                                         or implementation details beyond basic
+                                         terminology.".
+                FALLBACK-TO             STANDARD.
+                FALLBACK-LOG            "RETRIEVAL_BUDGET: MINIMAL expanded --
+                                         operation required knowledge recall
+                                         beyond terminology resolution.".
+
+            WHEN STANDARD:
+                RETRIEVAL-NEURONS       865.
+                VECTOR-SEARCH           ENABLED TOP-K 10.
+                VECTOR-INDEX            "regulatory-knowledge-full".
+                PROMPT-MODIFIER         "".
+                FALLBACK-TO             NONE.
+        END-TABLE.
+
+    DEPTH SECTION.
+        *> Only STANDARD depth is used in this program.
+        DEPTH-TABLE depth-levels.
+            WHEN STANDARD:
+                MAX-PASSES              1.
+                TOKEN-MULTIPLIER        1.0.
+                PROMPT-SUFFIX           "".
+        END-TABLE.
+
+    STYLE SECTION.
+        *> No style modifiers used. Only default INTELLIGENTLY.
+        STYLE-TABLE style-modifiers.
+            WHEN INTELLIGENTLY:
+                PROMPT-PREFIX           "".
+                TEMPERATURE-ADJUSTMENT  0.
+        END-TABLE.
+
+    TEMPLATE SECTION.
+        DEFINE TEMPLATE "deduce-logical".
+            "You are executing a DEDUCE operation in an AILang v0.8.2
+             program. Your task is logical deduction: derive conclusions
+             from the stated premises using valid inference rules.
+
+             REASONING TYPE: DEDUCE (logical inference from premises)
+             Do not introduce premises not provided unless explicitly
+             permitted by the retrieval budget below.
+
+             {RETRIEVAL_MODIFIER}
+
+             {DEPTH_SUFFIX}
+
+             {BOUNDARY_INSTRUCTIONS}
+
+             INPUTS:
+             {FORMATTED_INPUTS}
+
+             Respond in valid JSON matching the OUTPUT_FORMAT specified
+             in the boundary instructions.".
+        END-TEMPLATE.
+
+        DEFINE TEMPLATE "compare-rank".
+            "You are executing a COMPARE operation in an AILang v0.8.2
+             program. Your task is comparative analysis: evaluate the
+             provided items against the specified dimensions and produce
+             a structured ranking with findings.
+
+             REASONING TYPE: COMPARE (relative ordering and ranking)
+
+             {BOUNDARY_INSTRUCTIONS}
+
+             INPUTS:
+             {FORMATTED_INPUTS}
+
+             Respond in valid JSON matching the OUTPUT_FORMAT specified
+             in the boundary instructions.".
+        END-TEMPLATE.
+
+
+*> ============================================================
+*> STATE DIVISION
+*> ============================================================
+*> Compiled from: all SET statements + all result variables
+*> (identified by the left-hand side of DEDUCE/COMPARE outputs)
+*>
+*> The compiler identified:
+*>   - 5 premise variables (TEXT)
+*>   - 1 case_facts variable (OBJECT)
+*>   - 3 result variables from DEDUCE operations
+*>   - 1 result variable from COMPARE operation
+*>   - 1 system CURRENT-RESULT register
+*>   - 1 system LAST-DISPATCH-META register
+*> ============================================================
+
+STATE DIVISION.
+
+    VARIABLE SECTION.
+        *> ---- Input Premises ----
+        *> Compiled from: SET premise_1 TO "..."
+        01 premise-1                TYPE TEXT
+            VALUE "Under Section 232 of the Trade Expansion Act of
+                   1962, the President may impose tariffs on imports
+                   that threaten to impair national security, including
+                   steel and aluminum products.".
+
+        01 premise-2                TYPE TEXT
+            VALUE "The United States-Mexico-Canada Agreement (USMCA)
+                   provides preferential tariff treatment for goods
+                   that meet the agreement's rules of origin, including
+                   a regional value content threshold of 70% for steel
+                   products to qualify for tariff-free treatment.".
+
+        01 premise-3                TYPE TEXT
+            VALUE "Anti-dumping duties are imposed when a foreign
+                   manufacturer sells goods in the US at less than
+                   fair value (LTFV), determined by comparing the
+                   export price to the normal value in the home
+                   market. The US Department of Commerce conducts
+                   LTFV investigations.".
+
+        01 premise-4                TYPE TEXT
+            VALUE "Countervailing duties (CVDs) are imposed when a
+                   foreign government provides subsidies to its
+                   domestic producers that cause or threaten material
+                   injury to a US domestic industry. The International
+                   Trade Commission (ITC) determines material injury.".
+
+        01 premise-5                TYPE TEXT
+            VALUE "A product is classified under the Harmonized Tariff
+                   Schedule (HTS) for duty determination. Hot-rolled
+                   steel coils fall under HTS Chapter 72, subheading
+                   7208. The applicable duty rate depends on the country
+                   of origin, trade agreements in force, and any active
+                   anti-dumping or countervailing duty orders.".
+
+        *> ---- Case Data ----
+        *> Compiled from: SET case_facts TO { ... }
+        01 case-facts               TYPE OBJECT.
+            05 exporter             TYPE TEXT
+                VALUE "Northern Steel Corp., Hamilton, Ontario, Canada".
+            05 importer             TYPE TEXT
+                VALUE "Pacific Construction Supply, Seattle, WA, USA".
+            05 product              TYPE TEXT
+                VALUE "Hot-rolled carbon steel coils, 3mm, SAE 1020".
+            05 hts-classification   TYPE TEXT
+                VALUE "7208.27.00".
+            05 shipment-value       TYPE TEXT
+                VALUE "$2,400,000 USD (FOB Hamilton)".
+            05 quantity             TYPE TEXT
+                VALUE "1,200 metric tons".
+            05 normal-value-canada  TYPE TEXT
+                VALUE "$2,100 per metric ton in Canadian domestic market".
+            05 export-price         TYPE TEXT
+                VALUE "$2,000 per metric ton to US buyer".
+            05 price-difference     TYPE TEXT
+                VALUE "Export price is $100/ton below Canadian domestic
+                       price (4.76% margin)".
+            05 regional-value-content TYPE TEXT
+                VALUE "82% -- manufactured from iron ore mined in
+                       Labrador, processed in Hamilton".
+            05 canadian-govt-subsidies TYPE TEXT
+                VALUE "Northern Steel received CAD $15 million provincial
+                       grant for facility modernization in 2024 under
+                       Ontario's Manufacturing Innovation Fund".
+            05 active-trade-orders  TYPE TEXT
+                VALUE "The US has active AD/CVD orders on certain
+                       hot-rolled steel from multiple countries; status
+                       of Canadian orders requires verification".
+            05 shipment-date        TYPE TEXT
+                VALUE "2026-03-15".
+
+    RESULT SECTION.
+        *> ---- Operation Results ----
+        *> One slot per DEDUCE/COMPARE operation.
+        *> Populated by COMMIT after successful validation.
+        01 tariff-result-none       TYPE OBJECT.
+            88 POPULATED            WHEN NOT EMPTY.
+        01 tariff-result-minimal    TYPE OBJECT.
+            88 POPULATED            WHEN NOT EMPTY.
+        01 tariff-result-standard   TYPE OBJECT.
+            88 POPULATED            WHEN NOT EMPTY.
+        01 compare-validation-result TYPE OBJECT.
+            88 POPULATED            WHEN NOT EMPTY.
+
+    SYSTEM SECTION.
+        *> Runtime registers -- managed by the AIEX engine.
+        01 CURRENT-RESULT           TYPE OBJECT.
+            88 RESULT-READY         WHEN NOT EMPTY.
+            88 RESULT-EMPTY         WHEN EMPTY.
+        01 LAST-DISPATCH-META       TYPE OBJECT.
+            05 tokens-in            TYPE NUMBER.
+            05 tokens-out           TYPE NUMBER.
+            05 model-used           TYPE TEXT.
+            05 routing-applied      TYPE TEXT.
+            05 retrieval-level      TYPE TEXT.
+            05 depth-level          TYPE TEXT.
+            05 latency-ms           TYPE NUMBER.
+            05 cost-usd             TYPE NUMBER.
+            05 fallbacks-triggered  TYPE NUMBER.
+            05 retries-performed    TYPE NUMBER.
+        01 EXECUTION-LOG            TYPE LIST OF OBJECT.
+
+
+*> ============================================================
+*> CONTRACT DIVISION
+*> ============================================================
+*> Compiled from: MUST_INCLUDE, CANNOT_INCLUDE, and OUTPUT_FORMAT
+*> clauses on each DEDUCE and COMPARE operation.
+*>
+*> The compiler generates one CONTRACT per unique boundary set.
+*> In this program:
+*>   - Runs A and B share similar MUST_INCLUDE items
+*>     but have different OUTPUT_FORMAT schemas
+*>   - Run C has expanded MUST_INCLUDE
+*>   - The COMPARE has its own contract
+*>   - All three DEDUCE runs get retrieval-compliance checks
+*>     calibrated to their RETRIEVAL_BUDGET level
+*> ============================================================
+
+CONTRACT DIVISION.
+
+    *> --------------------------------------------------------
+    *> CONTRACT: deduce-tariff-none
+    *> For: DEDUCE tariff_applicability_none (Run A)
+    *> RETRIEVAL_BUDGET: NONE -- strictest retrieval compliance
+    *> --------------------------------------------------------
+    DEFINE CONTRACT deduce-tariff-none.
+
+        MUST-INCLUDE SECTION.
+            *> Compiled from: MUST_INCLUDE: [each_premise_evaluated, ...]
+            CHECK-PRESENT "section_232_applicability"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: Section 232 applicability analysis".
+
+            CHECK-PRESENT "usmca_qualification_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: USMCA qualification analysis".
+
+            CHECK-PRESENT "anti_dumping_margin_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: anti-dumping margin analysis".
+
+            CHECK-PRESENT "cvd_subsidy_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: CVD subsidy analysis".
+
+            CHECK-PRESENT "final_tariff_determination"
+                IN RESPONSE.tariffs_apply
+                DETECTION-METHOD FIELD-EXISTS
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: final tariff determination".
+
+            CHECK-COUNT RESPONSE.reasoning_chain
+                MINIMUM 5
+                DETECTION-METHOD ARRAY-LENGTH
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "Not all 5 premises were individually evaluated".
+        END-SECTION.
+
+        CANNOT-INCLUDE SECTION.
+            *> Compiled from: CANNOT_INCLUDE: [knowledge_not_in_premises,
+            *>                                  external_regulatory_details]
+            CHECK-ABSENT "external_regulatory_details"
+                IN RESPONSE
+                DETECTION-METHOD TERMINOLOGY-DIFF
+                BASELINE premise-1, premise-2, premise-3,
+                         premise-4, premise-5, case-facts
+                SENSITIVITY HIGH
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "CANNOT_INCLUDE violated: response contains
+                         external regulatory details not in premises".
+
+            CHECK-ABSENT "knowledge_not_in_premises"
+                IN RESPONSE
+                DETECTION-METHOD KNOWLEDGE-DEPTH-SCAN
+                THRESHOLD ZERO-EXTERNAL
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "CANNOT_INCLUDE violated: response contains
+                         knowledge not derivable from premises".
+        END-SECTION.
+
+        OUTPUT-FORMAT SECTION.
+            *> Compiled from: OUTPUT_FORMAT: { tariffs_apply: TEXT IN [...], ... }
+            VALIDATE-SCHEMA RESPONSE AGAINST {
+                tariffs_apply: TEXT
+                    CONSTRAINED-TO ["yes_tariffs_apply",
+                        "no_tariffs_exempt", "partially_applicable",
+                        "insufficient_information"],
+                section_232_status: TEXT,
+                usmca_qualification: BOOLEAN,
+                anti_dumping_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                cvd_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                reasoning_chain: LIST OF {
+                    premise_number: NUMBER,
+                    finding: TEXT,
+                    applies: BOOLEAN
+                },
+                terminology_gaps: LIST OF TEXT,
+                confidence_level: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low"]
+            }
+            ON-FAIL SEVERITY CRITICAL
+            MESSAGE "Output schema validation failed".
+        END-SECTION.
+
+        RETRIEVAL-COMPLIANCE SECTION.
+            *> BUDGET: NONE -- strictest check
+            SCAN RESPONSE FOR EXTERNAL-KNOWLEDGE
+                DETECTION-METHOD TERMINOLOGY-DIFF
+                BASELINE-SOURCES premise-1, premise-2, premise-3,
+                                 premise-4, premise-5, case-facts
+                TOLERANCE ZERO
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "RETRIEVAL_BUDGET: NONE violated --
+                         response contains external knowledge"
+                ACTION LOG-WARNING AND ANNOTATE.
+        END-SECTION.
+
+        SEVERITY-POLICY.
+            CRITICAL-FAILURES:  ROLLBACK TRANSACTION.
+            MAJOR-FAILURES:     RETRY WITH REINFORCED-PROMPT MAX 2.
+            MINOR-FAILURES:     LOG-WARNING AND COMMIT.
+        END-POLICY.
+    END-CONTRACT.
+
+    *> --------------------------------------------------------
+    *> CONTRACT: deduce-tariff-minimal
+    *> For: DEDUCE tariff_applicability_minimal (Run B)
+    *> RETRIEVAL_BUDGET: MINIMAL -- terminology OK, details not
+    *> --------------------------------------------------------
+    DEFINE CONTRACT deduce-tariff-minimal.
+
+        MUST-INCLUDE SECTION.
+            *> Same as Run A, plus terminology_resolution
+            CHECK-PRESENT "section_232_applicability"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: Section 232 applicability analysis".
+
+            CHECK-PRESENT "usmca_qualification_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: USMCA qualification analysis".
+
+            CHECK-PRESENT "anti_dumping_margin_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: anti-dumping margin analysis".
+
+            CHECK-PRESENT "cvd_subsidy_analysis"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: CVD subsidy analysis".
+
+            CHECK-PRESENT "terminology_resolution"
+                IN RESPONSE.reasoning_chain
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "Missing: terminology resolution (expected
+                         with RETRIEVAL_BUDGET: MINIMAL)".
+
+            CHECK-PRESENT "final_tariff_determination"
+                IN RESPONSE.tariffs_apply
+                DETECTION-METHOD FIELD-EXISTS
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: final tariff determination".
+        END-SECTION.
+
+        CANNOT-INCLUDE SECTION.
+            *> Compiled from: CANNOT_INCLUDE:
+            *>   [speculation_beyond_premises_and_basic_terminology]
+            CHECK-ABSENT "deep_external_knowledge"
+                IN RESPONSE
+                DETECTION-METHOD KNOWLEDGE-DEPTH-SCAN
+                THRESHOLD TERMINOLOGY-ONLY
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "CANNOT_INCLUDE violated: response contains
+                         knowledge deeper than terminology resolution".
+        END-SECTION.
+
+        OUTPUT-FORMAT SECTION.
+            *> Same as Run A but with terminology_resolved in chain
+            VALIDATE-SCHEMA RESPONSE AGAINST {
+                tariffs_apply: TEXT
+                    CONSTRAINED-TO ["yes_tariffs_apply",
+                        "no_tariffs_exempt", "partially_applicable",
+                        "insufficient_information"],
+                section_232_status: TEXT,
+                usmca_qualification: BOOLEAN,
+                anti_dumping_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                cvd_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                reasoning_chain: LIST OF {
+                    premise_number: NUMBER,
+                    finding: TEXT,
+                    applies: BOOLEAN,
+                    terminology_resolved: LIST OF TEXT
+                },
+                terminology_gaps: LIST OF TEXT,
+                confidence_level: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low"]
+            }
+            ON-FAIL SEVERITY CRITICAL
+            MESSAGE "Output schema validation failed".
+        END-SECTION.
+
+        RETRIEVAL-COMPLIANCE SECTION.
+            *> BUDGET: MINIMAL -- terminology OK, deep knowledge not
+            SCAN RESPONSE FOR DEEP-EXTERNAL-KNOWLEDGE
+                DETECTION-METHOD KNOWLEDGE-DEPTH-SCAN
+                THRESHOLD TERMINOLOGY-ONLY
+                ON-FAIL SEVERITY MINOR
+                MESSAGE "RETRIEVAL_BUDGET: MINIMAL may have exceeded
+                         terminology resolution"
+                ACTION LOG-WARNING.
+        END-SECTION.
+
+        SEVERITY-POLICY.
+            CRITICAL-FAILURES:  ROLLBACK TRANSACTION.
+            MAJOR-FAILURES:     RETRY WITH REINFORCED-PROMPT MAX 2.
+            MINOR-FAILURES:     LOG-WARNING AND COMMIT.
+        END-POLICY.
+    END-CONTRACT.
+
+    *> --------------------------------------------------------
+    *> CONTRACT: deduce-tariff-standard
+    *> For: DEDUCE tariff_applicability_standard (Run C)
+    *> RETRIEVAL_BUDGET: STANDARD -- full knowledge, no restriction
+    *> --------------------------------------------------------
+    DEFINE CONTRACT deduce-tariff-standard.
+
+        MUST-INCLUDE SECTION.
+            *> Expanded: includes exemption history, implementation
+            *> details, precedents, injury test
+            CHECK-PRESENT "section_232_applicability_with_exemption_history"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: Section 232 with exemption history".
+
+            CHECK-PRESENT "usmca_qualification_with_implementation_details"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: USMCA with implementation details".
+
+            CHECK-PRESENT "anti_dumping_margin_analysis_with_precedents"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: AD analysis with precedents".
+
+            CHECK-PRESENT "cvd_subsidy_analysis_with_injury_test"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: CVD analysis with injury test".
+
+            CHECK-PRESENT "full_regulatory_context"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "Missing: full regulatory context enrichment".
+
+            CHECK-PRESENT "final_tariff_determination"
+                IN RESPONSE.tariffs_apply
+                DETECTION-METHOD FIELD-EXISTS
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: final tariff determination".
+        END-SECTION.
+
+        *> No CANNOT_INCLUDE for Run C -- full retrieval allowed.
+
+        OUTPUT-FORMAT SECTION.
+            VALIDATE-SCHEMA RESPONSE AGAINST {
+                tariffs_apply: TEXT
+                    CONSTRAINED-TO ["yes_tariffs_apply",
+                        "no_tariffs_exempt", "partially_applicable",
+                        "insufficient_information"],
+                section_232_status: TEXT,
+                section_232_exemption_details: TEXT,
+                usmca_qualification: BOOLEAN,
+                usmca_details: TEXT,
+                anti_dumping_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                anti_dumping_details: TEXT,
+                cvd_risk: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low",
+                        "insufficient_info"],
+                cvd_details: TEXT,
+                reasoning_chain: LIST OF {
+                    premise_number: NUMBER,
+                    finding: TEXT,
+                    applies: BOOLEAN,
+                    external_context_used: LIST OF TEXT
+                },
+                confidence_level: TEXT
+                    CONSTRAINED-TO ["high", "moderate", "low"]
+            }
+            ON-FAIL SEVERITY CRITICAL
+            MESSAGE "Output schema validation failed".
+        END-SECTION.
+
+        RETRIEVAL-COMPLIANCE SECTION.
+            *> BUDGET: STANDARD -- no restriction, just log what was used
+            LOG RESPONSE EXTERNAL-KNOWLEDGE-ITEMS
+                FOR-AUDIT "Regulatory context items used".
+        END-SECTION.
+
+        SEVERITY-POLICY.
+            CRITICAL-FAILURES:  ROLLBACK TRANSACTION.
+            MAJOR-FAILURES:     RETRY WITH REINFORCED-PROMPT MAX 2.
+            MINOR-FAILURES:     LOG-WARNING AND COMMIT.
+        END-POLICY.
+    END-CONTRACT.
+
+    *> --------------------------------------------------------
+    *> CONTRACT: compare-budget-validation
+    *> For: COMPARE validation across all three runs
+    *> --------------------------------------------------------
+    DEFINE CONTRACT compare-budget-validation.
+
+        MUST-INCLUDE SECTION.
+            CHECK-PRESENT "monotonic_enrichment_verification"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: monotonic enrichment verification".
+
+            CHECK-PRESENT "conclusion_alignment_check"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY CRITICAL
+                MESSAGE "Missing: conclusion alignment check".
+
+            CHECK-PRESENT "terminology_gap_comparison"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "Missing: terminology gap comparison".
+
+            CHECK-PRESENT "retrieval_budget_compliance_check"
+                IN RESPONSE
+                DETECTION-METHOD SEMANTIC-SCAN
+                ON-FAIL SEVERITY MAJOR
+                MESSAGE "Missing: retrieval budget compliance check".
+        END-SECTION.
+
+        OUTPUT-FORMAT SECTION.
+            VALIDATE-SCHEMA RESPONSE AGAINST {
+                monotonic_enrichment: BOOLEAN,
+                conclusions_consistent: BOOLEAN,
+                terminology_precision_ranking: LIST OF TEXT,
+                external_knowledge_ranking: LIST OF TEXT,
+                confidence_progression: LIST OF TEXT,
+                none_terminology_gaps: NUMBER,
+                minimal_terminology_gaps: NUMBER,
+                standard_terminology_gaps: NUMBER,
+                budget_compliance: {
+                    none_used_only_premises: BOOLEAN,
+                    minimal_resolved_terminology_only: BOOLEAN,
+                    standard_used_full_context: BOOLEAN
+                },
+                overall_validation: TEXT
+                    CONSTRAINED-TO ["pass", "partial_pass", "fail"],
+                findings: LIST OF TEXT
+            }
+            ON-FAIL SEVERITY CRITICAL
+            MESSAGE "Validation output schema failed".
+        END-SECTION.
+
+        SEVERITY-POLICY.
+            CRITICAL-FAILURES:  ROLLBACK TRANSACTION.
+            MAJOR-FAILURES:     RETRY WITH REINFORCED-PROMPT MAX 2.
+            MINOR-FAILURES:     LOG-WARNING AND COMMIT.
+        END-POLICY.
+    END-CONTRACT.
+
+
+*> ============================================================
+*> EXECUTION DIVISION
+*> ============================================================
+*> Compiled from: the 3 DEDUCE operations + 1 COMPARE operation
+*> in source order.
+*>
+*> Dependency analysis:
+*>   TX-1 (DEDUCE NONE)      → independent
+*>   TX-2 (DEDUCE MINIMAL)   → independent
+*>   TX-3 (DEDUCE STANDARD)  → independent
+*>   TX-4 (COMPARE)          → depends on TX-1, TX-2, TX-3
+*>
+*> The compiler marks TX-1, TX-2, TX-3 as PARALLEL-ELIGIBLE.
+*> The runtime MAY execute them concurrently since they share
+*> no state dependencies. TX-4 must wait for all three.
+*> ============================================================
+
+EXECUTION DIVISION.
+
+    *> ---- Pre-Execution Budget Report ----
+    *> Generated by compiler from routing tables + operation analysis
+    BUDGET-REPORT.
+        TRANSACTIONS            4.
+        ESTIMATED-API-CALLS     4-10 (depending on retries).
+
+        TRANSACTION-BUDGET.
+            TX-1 deduce-none:
+                MODEL           GENERATIVE-STANDARD (Sonnet).
+                NEURONS         335 (DEDUCE 1200 minus RETRIEVAL 865).
+                EST-TOKENS-IN   2800.
+                EST-TOKENS-OUT  800.
+                EST-COST        $0.020.
+                EST-LATENCY     3000ms.
+
+            TX-2 deduce-minimal:
+                MODEL           GENERATIVE-STANDARD (Sonnet).
+                *> PLUS BERT vector search (3 results)
+                NEURONS         535 (DEDUCE 1200 minus 665 retrieval savings).
+                EST-TOKENS-IN   3200 (premises + 3 terminology lookups).
+                EST-TOKENS-OUT  1000.
+                EST-COST        $0.025.
+                EST-LATENCY     3500ms (50ms BERT + 3450ms Sonnet).
+
+            TX-3 deduce-standard:
+                MODEL           GENERATIVE-STANDARD (Sonnet).
+                *> PLUS BERT vector search (10 results)
+                NEURONS         1200 (full DEDUCE, no retrieval savings).
+                EST-TOKENS-IN   4500 (premises + 10 knowledge items).
+                EST-TOKENS-OUT  1400.
+                EST-COST        $0.035.
+                EST-LATENCY     4000ms (50ms BERT + 3950ms Sonnet).
+
+            TX-4 compare-validation:
+                MODEL           GENERATIVE-LIGHT (Haiku).
+                *> Escalated from BERT because output requires
+                *> qualitative TEXT fields (findings, rankings)
+                NEURONS         1050.
+                EST-TOKENS-IN   4000 (3 prior results).
+                EST-TOKENS-OUT  600.
+                EST-COST        $0.007.
+                EST-LATENCY     2000ms.
+
+        TOTALS.
+            TOTAL-EST-COST      $0.087.
+            VS-ALL-OPUS         $0.340 (4 x $0.085 avg).
+            SAVINGS             74.4%.
+            TOTAL-EST-LATENCY   4000ms (parallel TX-1,2,3) + 2000ms (TX-4)
+                                = 6000ms.
+            VS-SEQUENTIAL-OPUS  24000ms (4 x 6000ms avg).
+            SPEEDUP             4.0x.
+    END-BUDGET-REPORT.
+
+    *> ========================================================
+    *> TRANSACTION 1: DEDUCE tariff_applicability_none
+    *> Source line: 59-86
+    *> RETRIEVAL_BUDGET: NONE → no BERT call, pure reasoning
+    *> ========================================================
+    TRANSACTION deduce-tariff-none.
+        PARALLEL-GROUP      group-1.
+        OPERATION           DEDUCE.
+        STYLE               INTELLIGENTLY.
+        DEPTH               STANDARD.
+        RETRIEVAL           NONE.
+        CONTRACT            deduce-tariff-none.
+
+        INPUTS.
+            PREMISES        premise-1, premise-2, premise-3,
+                            premise-4, premise-5.
+            APPLY-TO        case-facts.
+        END-INPUTS.
+
+        DISPATCH.
+            *> Step 1: RETRIEVAL_BUDGET: NONE → skip BERT entirely
+            *> No vector search. No terminology lookup.
+            SKIP RETRIEVAL-PHASE
+                REASON "RETRIEVAL_BUDGET: NONE".
+
+            *> Step 2: Compose the prompt
+            USING ROUTING-TABLE reasoning-routes ENTRY DEDUCE.
+            USING BUDGET-TABLE retrieval-budgets ENTRY NONE.
+            USING DEPTH-TABLE depth-levels ENTRY STANDARD.
+            USING STYLE-TABLE style-modifiers ENTRY INTELLIGENTLY.
+
+            COMPOSE-PROMPT FROM:
+                TEMPLATE    "deduce-logical"
+                REPLACING   {RETRIEVAL_MODIFIER}
+                    WITH    BUDGET-TABLE.NONE.PROMPT-MODIFIER
+                REPLACING   {DEPTH_SUFFIX}
+                    WITH    DEPTH-TABLE.STANDARD.PROMPT-SUFFIX
+                REPLACING   {BOUNDARY_INSTRUCTIONS}
+                    WITH    "You MUST include analysis of:
+                             - Section 232 applicability
+                             - USMCA qualification analysis
+                             - Anti-dumping margin analysis
+                             - CVD subsidy analysis
+                             - Final tariff determination
+                             Each of the 5 premises must be
+                             individually evaluated.
+                             You MUST NOT include knowledge not
+                             in the premises or external regulatory
+                             details.
+                             Respond in JSON matching this schema:
+                             {OUTPUT_SCHEMA}"
+                REPLACING   {FORMATTED_INPUTS}
+                    WITH    FORMAT-AS-TEXT(INPUTS)
+                REPLACING   {OUTPUT_SCHEMA}
+                    WITH    CONTRACT.OUTPUT-FORMAT-SECTION.SCHEMA
+            END-COMPOSE.
+
+            *> Step 3: Send to Sonnet
+            SEND TO GENERATIVE-STANDARD WITH:
+                SYSTEM-PROMPT   COMPOSED-PROMPT.
+                USER-MESSAGE    "Analyze whether tariffs apply to
+                                 this shipment based ONLY on the
+                                 premises and case facts provided.".
+                TEMPERATURE     0.2.
+                MAX-TOKENS      1536.
+        END-DISPATCH.
+
+        ON-RESPONSE.
+            *> Step 4: Parse JSON response
+            PARSE RESPONSE AS JSON
+                ON-FAIL LOG-ERROR "Response is not valid JSON"
+                        SEVERITY CRITICAL.
+
+            *> Step 5: Validate against contract
+            VALIDATE AGAINST CONTRACT deduce-tariff-none.
+
+            *> Step 6: Act on validation result
+            IF ALL-BOUNDARIES-MET THEN
+                COMMIT RESPONSE TO tariff-result-none
+                LOG-SUCCESS "TX deduce-tariff-none COMMITTED"
+                UPDATE LAST-DISPATCH-META WITH:
+                    model-used          "claude-sonnet-4-6"
+                    routing-applied     "DEDUCE"
+                    retrieval-level     "NONE"
+                    depth-level         "STANDARD"
+                    fallbacks-triggered 0
+                    retries-performed   0
+            END-IF.
+
+            IF SOME-BOUNDARIES-FAILED THEN
+                PERFORM RETRY-WITH-REINFORCEMENT
+                    USING CONTRACT.SEVERITY-POLICY
+                    ADDING-TO-PROMPT VIOLATION-DETAILS
+                LOG-WARNING "TX deduce-tariff-none RETRYING"
+            END-IF.
+
+            IF CRITICAL-FAILURE THEN
+                ROLLBACK
+                LOG-ERROR "TX deduce-tariff-none ROLLED BACK"
+                HALT-PROGRAM WITH EXIT-CODE 1
+            END-IF.
+        END-ON-RESPONSE.
+    END-TRANSACTION.
+
+    *> ========================================================
+    *> TRANSACTION 2: DEDUCE tariff_applicability_minimal
+    *> Source line: 97-126
+    *> RETRIEVAL_BUDGET: MINIMAL → BERT terminology lookup first
+    *> ========================================================
+    TRANSACTION deduce-tariff-minimal.
+        PARALLEL-GROUP      group-1.
+        OPERATION           DEDUCE.
+        STYLE               INTELLIGENTLY.
+        DEPTH               STANDARD.
+        RETRIEVAL           MINIMAL.
+        CONTRACT            deduce-tariff-minimal.
+
+        INPUTS.
+            PREMISES        premise-1, premise-2, premise-3,
+                            premise-4, premise-5.
+            APPLY-TO        case-facts.
+        END-INPUTS.
+
+        DISPATCH.
+            *> Step 1: RETRIEVAL_BUDGET: MINIMAL → BERT lookup
+            *> Search the terminology index for trade law terms
+            *> found in the premises and case facts.
+            PERFORM RETRIEVAL-PHASE.
+                EXTRACT-TERMS FROM INPUTS
+                    USING BERT-CLASS MODEL "colbert-v2"
+                    DOMAIN "international-trade-law"
+                    INTO extracted-terms.
+                    *> Expected terms: "LTFV", "material injury",
+                    *> "HTS 7208", "countervailing duty",
+                    *> "rules of origin", "Section 232",
+                    *> "regional value content"
+
+                SEARCH VECTOR-DB
+                    INDEX "terminology-definitions"
+                    QUERY extracted-terms
+                    TOP-K 3
+                    INTO terminology-results.
+                    *> Returns ~3 concise definitions per term
+                    *> E.g.: "LTFV (Less Than Fair Value): Under
+                    *>  19 USC 1677(34), the price at which..."
+
+                APPEND terminology-results TO INPUTS
+                    AS "RESOLVED TERMINOLOGY (you may reference
+                        these definitions but do not inject
+                        knowledge beyond them)".
+            END-RETRIEVAL-PHASE.
+
+            *> Step 2: Compose the prompt (with terminology appended)
+            USING ROUTING-TABLE reasoning-routes ENTRY DEDUCE.
+            USING BUDGET-TABLE retrieval-budgets ENTRY MINIMAL.
+            USING DEPTH-TABLE depth-levels ENTRY STANDARD.
+            USING STYLE-TABLE style-modifiers ENTRY INTELLIGENTLY.
+
+            COMPOSE-PROMPT FROM:
+                TEMPLATE    "deduce-logical"
+                REPLACING   {RETRIEVAL_MODIFIER}
+                    WITH    BUDGET-TABLE.MINIMAL.PROMPT-MODIFIER
+                REPLACING   {DEPTH_SUFFIX}
+                    WITH    DEPTH-TABLE.STANDARD.PROMPT-SUFFIX
+                REPLACING   {BOUNDARY_INSTRUCTIONS}
+                    WITH    "You MUST include analysis of:
+                             - Section 232 applicability
+                             - USMCA qualification analysis
+                             - Anti-dumping margin analysis
+                             - CVD subsidy analysis
+                             - Terminology resolution
+                             - Final tariff determination
+                             You MUST NOT include speculation beyond
+                             premises and basic terminology.
+                             Respond in JSON matching this schema:
+                             {OUTPUT_SCHEMA}"
+                REPLACING   {FORMATTED_INPUTS}
+                    WITH    FORMAT-AS-TEXT(INPUTS-WITH-TERMINOLOGY)
+                REPLACING   {OUTPUT_SCHEMA}
+                    WITH    CONTRACT.OUTPUT-FORMAT-SECTION.SCHEMA
+            END-COMPOSE.
+
+            *> Step 3: Send to Sonnet
+            SEND TO GENERATIVE-STANDARD WITH:
+                SYSTEM-PROMPT   COMPOSED-PROMPT.
+                USER-MESSAGE    "Analyze whether tariffs apply. You may
+                                 use the resolved terminology provided
+                                 but do not inject further knowledge.".
+                TEMPERATURE     0.2.
+                MAX-TOKENS      1536.
+        END-DISPATCH.
+
+        ON-RESPONSE.
+            PARSE RESPONSE AS JSON
+                ON-FAIL LOG-ERROR "Response is not valid JSON"
+                        SEVERITY CRITICAL.
+
+            VALIDATE AGAINST CONTRACT deduce-tariff-minimal.
+
+            IF ALL-BOUNDARIES-MET THEN
+                COMMIT RESPONSE TO tariff-result-minimal
+                LOG-SUCCESS "TX deduce-tariff-minimal COMMITTED"
+                UPDATE LAST-DISPATCH-META WITH:
+                    model-used          "colbert-v2 + claude-sonnet-4-6"
+                    routing-applied     "BERT-RETRIEVE + DEDUCE"
+                    retrieval-level     "MINIMAL"
+                    depth-level         "STANDARD"
+                    fallbacks-triggered 0
+                    retries-performed   0
+            END-IF.
+
+            IF SOME-BOUNDARIES-FAILED THEN
+                PERFORM RETRY-WITH-REINFORCEMENT
+                    USING CONTRACT.SEVERITY-POLICY
+                    ADDING-TO-PROMPT VIOLATION-DETAILS
+            END-IF.
+
+            IF CRITICAL-FAILURE THEN
+                ROLLBACK
+                LOG-ERROR "TX deduce-tariff-minimal ROLLED BACK"
+                HALT-PROGRAM WITH EXIT-CODE 1
+            END-IF.
+        END-ON-RESPONSE.
+    END-TRANSACTION.
+
+    *> ========================================================
+    *> TRANSACTION 3: DEDUCE tariff_applicability_standard
+    *> Source line: 137-168
+    *> RETRIEVAL_BUDGET: STANDARD → full BERT knowledge retrieval
+    *> ========================================================
+    TRANSACTION deduce-tariff-standard.
+        PARALLEL-GROUP      group-1.
+        OPERATION           DEDUCE.
+        STYLE               INTELLIGENTLY.
+        DEPTH               STANDARD.
+        RETRIEVAL           STANDARD.
+        CONTRACT            deduce-tariff-standard.
+
+        INPUTS.
+            PREMISES        premise-1, premise-2, premise-3,
+                            premise-4, premise-5.
+            APPLY-TO        case-facts.
+        END-INPUTS.
+
+        DISPATCH.
+            *> Step 1: RETRIEVAL_BUDGET: STANDARD → full BERT retrieval
+            *> Search the full regulatory knowledge base.
+            PERFORM RETRIEVAL-PHASE.
+                EXTRACT-TERMS FROM INPUTS
+                    USING BERT-CLASS MODEL "colbert-v2"
+                    DOMAIN "international-trade-law"
+                    INTO extracted-terms.
+
+                SEARCH VECTOR-DB
+                    INDEX "regulatory-knowledge-full"
+                    QUERY extracted-terms
+                    TOP-K 10
+                    INTO knowledge-results.
+                    *> Returns ~10 regulatory knowledge items:
+                    *> - Section 232 proclamation history
+                    *> - USMCA implementation details
+                    *> - Active AD/CVD orders for Canadian steel
+                    *> - ITC injury determination precedents
+                    *> - HTS 7208.27.00 specific duty rates
+                    *> - De minimis thresholds
+                    *> - etc.
+
+                APPEND knowledge-results TO INPUTS
+                    AS "REGULATORY CONTEXT (you may fully
+                        reference this knowledge to enrich
+                        your analysis)".
+            END-RETRIEVAL-PHASE.
+
+            *> Step 2: Compose the prompt (with full knowledge)
+            USING ROUTING-TABLE reasoning-routes ENTRY DEDUCE.
+            USING BUDGET-TABLE retrieval-budgets ENTRY STANDARD.
+            USING DEPTH-TABLE depth-levels ENTRY STANDARD.
+            USING STYLE-TABLE style-modifiers ENTRY INTELLIGENTLY.
+
+            COMPOSE-PROMPT FROM:
+                TEMPLATE    "deduce-logical"
+                REPLACING   {RETRIEVAL_MODIFIER}
+                    WITH    BUDGET-TABLE.STANDARD.PROMPT-MODIFIER
+                REPLACING   {DEPTH_SUFFIX}
+                    WITH    DEPTH-TABLE.STANDARD.PROMPT-SUFFIX
+                REPLACING   {BOUNDARY_INSTRUCTIONS}
+                    WITH    "You MUST include analysis of:
+                             - Section 232 with exemption history
+                             - USMCA with implementation details
+                             - AD margin analysis with precedents
+                             - CVD analysis with injury test
+                             - Full regulatory context
+                             - Final tariff determination
+                             Respond in JSON matching this schema:
+                             {OUTPUT_SCHEMA}"
+                REPLACING   {FORMATTED_INPUTS}
+                    WITH    FORMAT-AS-TEXT(INPUTS-WITH-KNOWLEDGE)
+                REPLACING   {OUTPUT_SCHEMA}
+                    WITH    CONTRACT.OUTPUT-FORMAT-SECTION.SCHEMA
+            END-COMPOSE.
+
+            *> Step 3: Send to Sonnet
+            SEND TO GENERATIVE-STANDARD WITH:
+                SYSTEM-PROMPT   COMPOSED-PROMPT.
+                USER-MESSAGE    "Provide a comprehensive tariff
+                                 analysis using all available
+                                 regulatory context.".
+                TEMPERATURE     0.2.
+                MAX-TOKENS      1536.
+        END-DISPATCH.
+
+        ON-RESPONSE.
+            PARSE RESPONSE AS JSON
+                ON-FAIL LOG-ERROR "Response is not valid JSON"
+                        SEVERITY CRITICAL.
+
+            VALIDATE AGAINST CONTRACT deduce-tariff-standard.
+
+            IF ALL-BOUNDARIES-MET THEN
+                COMMIT RESPONSE TO tariff-result-standard
+                LOG-SUCCESS "TX deduce-tariff-standard COMMITTED"
+                UPDATE LAST-DISPATCH-META WITH:
+                    model-used          "colbert-v2 + claude-sonnet-4-6"
+                    routing-applied     "BERT-RETRIEVE-FULL + DEDUCE"
+                    retrieval-level     "STANDARD"
+                    depth-level         "STANDARD"
+                    fallbacks-triggered 0
+                    retries-performed   0
+            END-IF.
+
+            IF SOME-BOUNDARIES-FAILED THEN
+                PERFORM RETRY-WITH-REINFORCEMENT
+                    USING CONTRACT.SEVERITY-POLICY
+                    ADDING-TO-PROMPT VIOLATION-DETAILS
+            END-IF.
+
+            IF CRITICAL-FAILURE THEN
+                ROLLBACK
+                LOG-ERROR "TX deduce-tariff-standard ROLLED BACK"
+                HALT-PROGRAM WITH EXIT-CODE 1
+            END-IF.
+        END-ON-RESPONSE.
+    END-TRANSACTION.
+
+    *> ========================================================
+    *> PARALLEL BARRIER
+    *> TX-1, TX-2, TX-3 are in PARALLEL-GROUP group-1.
+    *> TX-4 cannot begin until all three have COMMITTED.
+    *> ========================================================
+    AWAIT PARALLEL-GROUP group-1.
+        ON-ALL-COMMITTED    CONTINUE.
+        ON-ANY-ROLLED-BACK  HALT-PROGRAM WITH EXIT-CODE 1
+                            MESSAGE "Cannot validate: a DEDUCE
+                                     transaction failed.".
+
+    *> ========================================================
+    *> TRANSACTION 4: COMPARE validation
+    *> Source line: 181-213
+    *> Compares all three DEDUCE results for monotonic enrichment
+    *>
+    *> Model selection: COMPARE normally routes to BERT-CLASS
+    *> but this COMPARE's OUTPUT_FORMAT requires qualitative TEXT
+    *> fields (findings, rankings) → escalated to GENERATIVE-LIGHT
+    *> (Haiku). BERT can rank; it can't write analytical findings.
+    *> ========================================================
+    TRANSACTION compare-validation.
+        DEPENDS-ON          deduce-tariff-none,
+                            deduce-tariff-minimal,
+                            deduce-tariff-standard.
+        OPERATION           COMPARE.
+        STYLE               INTELLIGENTLY.
+        DEPTH               STANDARD.
+        RETRIEVAL           NONE.
+        CONTRACT            compare-budget-validation.
+
+        INPUTS.
+            ITEMS           tariff-result-none,
+                            tariff-result-minimal,
+                            tariff-result-standard.
+            DIMENSIONS      conclusion_consistency,
+                            terminology_precision,
+                            external_knowledge_enrichment,
+                            information_sufficiency,
+                            reasoning_chain_richness,
+                            confidence_level_progression.
+        END-INPUTS.
+
+        DISPATCH.
+            *> Step 1: No retrieval needed -- comparing existing results
+            SKIP RETRIEVAL-PHASE
+                REASON "COMPARE of prior results, no external
+                        knowledge needed".
+
+            *> Step 2: Model escalation check
+            *> COMPARE normally → BERT-CLASS
+            *> But OUTPUT-REQUIRES QUALITATIVE-TEXT → escalate
+            EVALUATE MODEL-SELECTION:
+                ROUTING-TABLE SAYS     BERT-CLASS.
+                ESCALATION-RULE        OUTPUT-REQUIRES QUALITATIVE-TEXT.
+                ESCALATED-TO           GENERATIVE-LIGHT.
+                LOG "Model escalated from BERT-CLASS to Haiku:
+                     COMPARE output requires qualitative text
+                     fields (findings, rankings).".
+            END-EVALUATE.
+
+            *> Step 3: Compose the prompt
+            COMPOSE-PROMPT FROM:
+                TEMPLATE    "compare-rank"
+                REPLACING   {BOUNDARY_INSTRUCTIONS}
+                    WITH    "Compare the three tariff analyses across
+                             these dimensions:
+                             1. conclusion_consistency
+                             2. terminology_precision
+                             3. external_knowledge_enrichment
+                             4. information_sufficiency
+                             5. reasoning_chain_richness
+                             6. confidence_level_progression
+                             You MUST include:
+                             - Monotonic enrichment verification
+                             - Conclusion alignment check
+                             - Terminology gap comparison
+                             - Retrieval budget compliance check
+                             Respond in JSON matching: {OUTPUT_SCHEMA}"
+                REPLACING   {FORMATTED_INPUTS}
+                    WITH    FORMAT-AS-TEXT(INPUTS)
+                REPLACING   {OUTPUT_SCHEMA}
+                    WITH    CONTRACT.OUTPUT-FORMAT-SECTION.SCHEMA
+            END-COMPOSE.
+
+            *> Step 4: Send to Haiku (escalated from BERT)
+            SEND TO GENERATIVE-LIGHT WITH:
+                SYSTEM-PROMPT   COMPOSED-PROMPT.
+                USER-MESSAGE    "Validate the three DEDUCE results for
+                                 monotonic enrichment across retrieval
+                                 budget levels.".
+                TEMPERATURE     0.3.
+                MAX-TOKENS      1024.
+        END-DISPATCH.
+
+        ON-RESPONSE.
+            PARSE RESPONSE AS JSON
+                ON-FAIL LOG-ERROR "Response is not valid JSON"
+                        SEVERITY CRITICAL.
+
+            VALIDATE AGAINST CONTRACT compare-budget-validation.
+
+            IF ALL-BOUNDARIES-MET THEN
+                COMMIT RESPONSE TO compare-validation-result
+                LOG-SUCCESS "TX compare-validation COMMITTED"
+
+                *> Log the overall test result
+                IF RESPONSE.overall_validation = "pass" THEN
+                    LOG-SUCCESS "=== TEST 10: PASS ==="
+                ELSE
+                    LOG-WARNING "=== TEST 10: {RESPONSE.overall_validation} ==="
+                END-IF
+            END-IF.
+
+            IF SOME-BOUNDARIES-FAILED THEN
+                PERFORM RETRY-WITH-REINFORCEMENT
+                    USING CONTRACT.SEVERITY-POLICY
+                    ADDING-TO-PROMPT VIOLATION-DETAILS
+            END-IF.
+
+            IF CRITICAL-FAILURE THEN
+                ROLLBACK
+                LOG-ERROR "TX compare-validation ROLLED BACK"
+                HALT-PROGRAM WITH EXIT-CODE 1
+            END-IF.
+        END-ON-RESPONSE.
+    END-TRANSACTION.
+
+    *> ========================================================
+    *> PROGRAM COMPLETE
+    *> ========================================================
+    PROGRAM-EXIT.
+        LOG "=== Execution Complete ===".
+        LOG "Transactions executed: 4".
+        LOG "Transactions committed: {COUNT-COMMITTED}".
+        LOG "Transactions rolled back: {COUNT-ROLLED-BACK}".
+        LOG "Total retries: {TOTAL-RETRIES}".
+        LOG "Total cost: ${TOTAL-COST}".
+        LOG "Total latency: {TOTAL-LATENCY}ms".
+        LOG "Models used: {DISTINCT-MODELS-USED}".
+        DISPLAY EXECUTION-LOG.
+        EXIT PROGRAM.
+
+
+*> ============================================================
+*> FALLBACK SECTION
+*> ============================================================
+*> Global fallback procedures referenced by ON-RESPONSE blocks.
+*> ============================================================
+
+FALLBACK SECTION.
+
+    PROCEDURE RETRY-WITH-REINFORCEMENT.
+        ACCEPT VIOLATION-DETAILS FROM CALLER.
+        ACCEPT SEVERITY-POLICY FROM CALLER.
+        ACCEPT MAX-RETRIES FROM SEVERITY-POLICY.
+
+        COMPOSE REINFORCEMENT-PROMPT FROM:
+            ORIGINAL-PROMPT
+            APPEND "
+
+            === RETRY INSTRUCTION ===
+            Your previous response violated the following
+            boundary constraints:
+            {VIOLATION-DETAILS}
+
+            You MUST fix these violations in your next response.
+            All other instructions remain in effect.
+            === END RETRY INSTRUCTION ===".
+        END-COMPOSE.
+
+        INCREMENT RETRY-COUNT.
+
+        IF RETRY-COUNT > MAX-RETRIES THEN
+            LOG-ERROR "Max retries ({MAX-RETRIES}) exceeded for
+                       {CURRENT-TRANSACTION.NAME}"
+            ESCALATE TO CRITICAL
+        ELSE
+            RE-DISPATCH CURRENT-TRANSACTION
+                WITH REINFORCEMENT-PROMPT
+            LOG-WARNING "Retry {RETRY-COUNT}/{MAX-RETRIES} for
+                         {CURRENT-TRANSACTION.NAME}"
+        END-IF.
+    END-PROCEDURE.
+
+    PROCEDURE RETRIEVAL-BUDGET-FALLBACK.
+        *> Called when BERT retrieval returns insufficient results
+        EVALUATE CURRENT-RETRIEVAL-LEVEL:
+            WHEN NONE:
+                LOG-WARNING BUDGET-TABLE.NONE.FALLBACK-LOG
+                SET RETRIEVAL TO MINIMAL
+                RE-DISPATCH CURRENT-TRANSACTION
+            WHEN MINIMAL:
+                LOG-WARNING BUDGET-TABLE.MINIMAL.FALLBACK-LOG
+                SET RETRIEVAL TO STANDARD
+                RE-DISPATCH CURRENT-TRANSACTION
+            WHEN STANDARD:
+                *> Already at maximum retrieval. No fallback.
+                LOG-ERROR "RETRIEVAL: STANDARD insufficient --
+                           no further fallback available"
+                CONTINUE WITH CURRENT-RESULTS
+        END-EVALUATE.
+    END-PROCEDURE.

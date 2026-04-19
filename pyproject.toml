@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aiex"
+version = "0.1.0"
+description = "AI Execution Language -- a COBOL-inspired execution framework for AILang programs"
+requires-python = ">=3.11"
+license = { text = "Source-available, free for non-commercial use; commercial use requires separate licence -- see LICENSE.md" }
+dependencies = [
+    "anthropic>=0.42.0",
+    "pydantic>=2.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+bert = ["sentence-transformers"]
+
+[project.scripts]
+aiex = "aiex.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aiex"]

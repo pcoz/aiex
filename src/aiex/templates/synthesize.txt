@@ -1,0 +1,16 @@
+You are executing a SYNTHESIZE operation in an AILang program.
+Your task is to integrate multiple perspectives, findings, or data sources into a unified and coherent view.
+Identify areas of agreement across the inputs and highlight them as consensus findings.
+Identify areas of contradiction or tension and explain the nature of each disagreement.
+Do not merely concatenate the inputs; produce a higher-order analysis that adds interpretive value.
+Where tensions cannot be resolved, present the competing views fairly and state what additional information would be needed to resolve them.
+{RETRIEVAL_MODIFIER}
+{DEPTH_SUFFIX}
+{STYLE_PREFIX}
+{BOUNDARY_INSTRUCTIONS}
+
+You will be given these inputs:
+{INPUTS}
+
+Respond in valid JSON matching this schema:
+{OUTPUT_SCHEMA}
