@@ -71,6 +71,11 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
     graph = analyze_dependencies(program)
     sorted_ids = graph.topological_sort()
 
+    # Index the program's REALITY_CONTEXT definitions by name so each
+    # operation that runs under a WITH REALITY_CONTEXT block can have its
+    # frame (worldview / assumptions / value system) rendered and attached.
+    reality_contexts_by_name = {rc.name: rc for rc in program.reality_contexts}
+
     # ---- Step 2-4: Route, contract, and budget each operation ----
     # We iterate in topological order so that every operation's
     # dependencies have already been processed.
@@ -112,6 +117,12 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
                 parallel_group = group_name
                 break
 
+        # -- Reality context: if this op runs inside a WITH REALITY_CONTEXT
+        # block, render its frame so the runtime can inject it into the prompt.
+        ctx_name = graph.node_contexts.get(op_id)
+        reality_ctx = reality_contexts_by_name.get(ctx_name) if ctx_name else None
+        reality_frame = _render_reality_frame(reality_ctx) if reality_ctx else None
+
         # -- Build the TransactionPlan that maps 1:1 with the OperationNode --
         # This is the compiled representation: it carries the original AST
         # fields plus routing, contract, dependency, and parallelism metadata.
@@ -134,6 +145,8 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
             dimensions=list(op.dimensions),
             direction=op.direction,
             emit_digest=bool(op.emit_digest),
+            reality_context_name=ctx_name,
+            reality_frame=reality_frame,
         )
         transactions.append(tx)
 
@@ -177,6 +190,32 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
         vs_baseline_cost=round(baseline_cost, 4),
         savings_pct=savings_pct,
     )
+
+
+def _render_reality_frame(rc) -> str:
+    """Render a REALITY_CONTEXT into an authoritative system-prompt preamble.
+
+    The runtime prepends this to the system prompt of every operation that
+    runs inside the corresponding ``WITH REALITY_CONTEXT`` block, so the
+    declared worldview, assumptions, and value system actually condition the
+    model's reasoning (rather than being parsed and discarded).  Keeping the
+    rendering here means it is computed once at compile time and is visible
+    in the plan for audit.
+    """
+    lines = [
+        f"=== REALITY CONTEXT: {rc.name} ===",
+        "Reason strictly within this frame; treat it as authoritative for this operation.",
+    ]
+    if rc.worldview:
+        lines.append(f"WORLDVIEW: {rc.worldview}")
+    if rc.assumptions:
+        lines.append("ASSUMPTIONS (hold these as given):")
+        lines.extend(f"  - {a}" for a in rc.assumptions)
+    if rc.value_system:
+        lines.append("VALUE SYSTEM (let these govern judgement):")
+        lines.extend(f"  - {v}" for v in rc.value_system)
+    lines.append("=== END REALITY CONTEXT ===")
+    return "\n".join(lines)
 
 
 def _compile_code_block(cb: CodeBlock, op_id: str, graph) -> tuple[TransactionPlan, BudgetEstimate]:

@@ -62,6 +62,11 @@ class DependencyGraph:
     nodes: dict[str, OperationNode] = field(default_factory=dict)
     edges: dict[str, list[str]] = field(default_factory=dict)  # node -> depends_on
     parallel_groups: dict[str, list[str]] = field(default_factory=dict)
+    # Maps an operation's transaction ID to the name of the REALITY_CONTEXT
+    # it executes under (via an enclosing WITH REALITY_CONTEXT block), if any.
+    # The compiler uses this to attach the rendered reality frame to each
+    # TransactionPlan so the runtime can inject it into the system prompt.
+    node_contexts: dict[str, str] = field(default_factory=dict)
 
     def add_node(self, op_id: str, op: OperationNode) -> None:
         self.nodes[op_id] = op
@@ -159,7 +164,11 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
     # retain full parallelism.
     barrier_deps: list[str] = []
 
-    def process_operation(op: OperationNode, context_deps: list[str] | None = None) -> str:
+    def process_operation(
+        op: OperationNode,
+        context_deps: list[str] | None = None,
+        context_name: str | None = None,
+    ) -> str:
         """Register a single operation in the graph and wire up its edges.
 
         ``context_deps`` carries structural dependencies inherited from
@@ -167,9 +176,16 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
         REASONING_CONTEXT or a THEN chain).  These are added on top of
         any data-flow edges discovered via ``get_references`` and any
         CodeBlock barriers that precede this op in source order.
+
+        ``context_name`` is the name of the enclosing WITH REALITY_CONTEXT
+        block, if any.  It is recorded in ``graph.node_contexts`` so the
+        compiler can attach the rendered reality frame to this operation's
+        transaction.
         """
         op_id = get_op_id(op)
         graph.add_node(op_id, op)
+        if context_name:
+            graph.node_contexts[op_id] = context_name
 
         # Only create edges for references that point to another
         # operation's result -- SET variable references are ignored
@@ -225,18 +241,26 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
         barrier_deps.append(cb_id)
         return cb_id
 
-    def process_item(item, context_deps: list[str] | None = None) -> list[str]:
+    def process_item(
+        item,
+        context_deps: list[str] | None = None,
+        context_name: str | None = None,
+    ) -> list[str]:
         """Process a program item, return list of op_ids created.
 
         Dispatches based on AST node type to apply the correct dependency
-        semantics for each block kind.
+        semantics for each block kind.  ``context_name`` is the enclosing
+        WITH REALITY_CONTEXT name (if any), threaded down so every nested
+        operation records which reality context it runs under.
         """
         if isinstance(item, OperationNode):
             # Standalone operation -- only data-flow and inherited deps.
-            return [process_operation(item, context_deps)]
+            return [process_operation(item, context_deps, context_name)]
 
         elif isinstance(item, CodeBlock):
             # Code block -- ordering barrier (see process_code_block).
+            # Code blocks have no LLM prompt, so the reality frame does not
+            # apply to them.
             return [process_code_block(item, context_deps)]
 
         elif isinstance(item, ThenChain):
@@ -249,7 +273,7 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
                 deps = list(context_deps or [])
                 if prev_id:
                     deps.append(prev_id)
-                op_id = process_operation(chain_op, deps)
+                op_id = process_operation(chain_op, deps, context_name)
                 chain_ids.append(op_id)
                 prev_id = op_id
             return chain_ids
@@ -257,11 +281,11 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
         elif isinstance(item, WithContextBlock):
             # WITH REALITY_CONTEXT blocks scope routing/constraints but
             # do NOT impose ordering.  Operations inside are independent
-            # of each other unless they share data-flow references.
-            # We simply pass through the inherited context_deps unchanged.
+            # of each other unless they share data-flow references.  We
+            # pass the context name down so each nested op records it.
             ids = []
             for sub_item in item.operations:
-                ids.extend(process_item(sub_item, context_deps))
+                ids.extend(process_item(sub_item, context_deps, item.context_name))
             return ids
 
         elif isinstance(item, ReasoningContextBlock):
@@ -269,14 +293,15 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
             # may consume the digest emitted by the previous one, so we
             # chain them by adding the prior operation as a dependency.
             # This mirrors the AILang spec's rule that reasoning contexts
-            # enforce step-by-step ordering.
+            # enforce step-by-step ordering.  Any enclosing reality context
+            # is carried through unchanged.
             ids = []
             prev_id = None
             for sub_item in item.operations:
                 deps = list(context_deps or [])
                 if prev_id:
                     deps.append(prev_id)
-                sub_ids = process_item(sub_item, deps)
+                sub_ids = process_item(sub_item, deps, context_name)
                 ids.extend(sub_ids)
                 if sub_ids:
                     prev_id = sub_ids[-1]

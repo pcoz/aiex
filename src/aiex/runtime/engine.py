@@ -232,6 +232,21 @@ class AiexEngine:
             model = tx.routing.escalated_to or tx.routing.base_tier
             console.print(f"    Model: {model.value}")
 
+        # Record that this transaction runs under a declared REALITY_CONTEXT,
+        # so the audit trail shows the lens every committed result was produced
+        # under -- not just the operation type and model.
+        if tx.reality_frame:
+            if self.verbose:
+                console.print(f"    Reality context: {tx.reality_context_name}")
+            state.log_event(
+                "CONTEXT",
+                {
+                    "tx": tx.id,
+                    "reality_context": tx.reality_context_name,
+                    "message": f"TX {tx.id}: reasoning under REALITY_CONTEXT '{tx.reality_context_name}'",
+                },
+            )
+
         # --- Prompt composition ---
         # The system prompt encodes the operation type (DEDUCE, TRACE, etc.),
         # retrieval constraints, depth instructions, and boundary rules.
@@ -521,14 +536,22 @@ class AiexEngine:
         }
 
         try:
-            return self.template_loader.compose(template_name, **kwargs)
+            composed = self.template_loader.compose(template_name, **kwargs)
         except (KeyError, FileNotFoundError):
             # Fallback: construct a basic prompt
-            return (
+            composed = (
                 f"You are executing a {tx.operation_type.value} operation.\n"
                 f"{retrieval_modifier}\n{depth_suffix}\n{boundary_instructions}\n"
                 f"Respond in valid JSON matching this schema:\n{schema_str}"
             )
+
+        # Prepend the active REALITY_CONTEXT frame (if any).  This is what
+        # gives REALITY_CONTEXT teeth: the declared worldview / assumptions /
+        # value system now lead the system prompt and condition the operation,
+        # instead of being parsed and discarded.
+        if tx.reality_frame:
+            composed = f"{tx.reality_frame}\n\n{composed}"
+        return composed
 
     def _compose_user_message(self, tx: TransactionPlan, state: ProgramState) -> str:
         """Compose the user message from input references.

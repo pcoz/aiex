@@ -78,7 +78,7 @@ WITH REALITY_CONTEXT pharmaceutical_safety:
 END_WITH
 ```
 
-The parser (`parse_with_context_block`) consumes `WITH REALITY_CONTEXT name:`, parses the body of operations, and closes on `END_WITH`. Any operation inside the block inherits the context's profile: the runtime attaches the context's `CONSTRAIN` and `SUPPRESS` rules as implicit contracts on every transaction in the block, and composes the worldview description, assumptions, and value system into the system prompt.
+The parser (`parse_with_context_block`) consumes `WITH REALITY_CONTEXT name:`, parses the body of operations, and closes on `END_WITH`. Any operation inside the block inherits the context: as of v0.1.0 the runtime composes the worldview description, assumptions, and value system into the system prompt of every transaction in the block, and records a `CONTEXT` event in the audit log naming the active context (see *Implementation status* below). Attaching the context's `CONSTRAIN` and `SUPPRESS` rules as enforcement contracts is specified (per the AIEX spec section 7.4, described next) but is not yet wired into the runtime.
 
 The AIEX runtime represents this at the execution layer as (per the AIEX spec section 7.4):
 
@@ -151,6 +151,14 @@ In an AILang program, the question has a one-line answer: the decision was made 
 This matters most in regulated domains. A compliance officer reviewing a loan decision wants to confirm that the decision was made under the organisation's declared underwriting worldview, not under whatever defaults happened to be in effect when the program ran. A `REALITY_CONTEXT conservative_underwriting` definition at the top of the source file, plus a `WITH REALITY_CONTEXT conservative_underwriting: ... END_WITH` block around the decision pipeline, gives the compliance officer exactly the audit artefact they need: a named, declarative, reviewable worldview that shaped every routing decision the runtime made.
 
 The worldview stops being an implicit assumption buried in prompt wording, and becomes a first-class question a reviewer can ask and a programmer can answer by pointing at a block of source.
+
+## Implementation status (AIEX v0.1.0)
+
+This chapter describes both what the runtime does today and the design it is converging on. To keep the two honest and separate:
+
+**Implemented and executing now.** A `WITH REALITY_CONTEXT` block's `WORLDVIEW`, `ASSUMPTIONS`, and `VALUE_SYSTEM` are rendered into an authoritative frame at compile time, prepended to the system prompt of every operation in the block (so they actually condition the model's reasoning), and logged as a per-transaction `CONTEXT` audit event (so the trail shows the lens each result was produced under). The compile path carries this through `DependencyGraph.node_contexts` → `TransactionPlan.reality_frame` → `engine._compose_system_prompt`. This is covered by `tests/test_reality_context.py`.
+
+**Specified, parsed, not yet enforced.** The `REASONING_PROFILE` (`PRIMARY`/`SECONDARY` routing preference, and `CONSTRAIN`/`SUPPRESS` as `constrain-enforcement` / `suppress-enforcement` rollback contracts) is fully parsed and carried in the AST, and the worldview/assumptions/value-system text does prime the model toward the declared profile through the injected frame. But the runtime does not yet attach `CONSTRAIN`/`SUPPRESS` as independent validators that roll a transaction back when a suppressed reasoning type or an out-of-bounds source is detected. The `suppress-enforcement` / `constrain-enforcement` contracts described in the sections above are the intended next step, not current behaviour. Treat the `synthesize_suppressed` / `constrain_*_respected` output fields as the model self-reporting under the injected frame, not as runtime-guaranteed invariants, until that enforcement lands.
 
 ## What you have now
 

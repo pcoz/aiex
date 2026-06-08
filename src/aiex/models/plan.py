@@ -253,6 +253,15 @@ class TransactionPlan(_Frozen):
     code_block_body: Optional[str] = Field(default=None)
     code_block_language: Optional[str] = Field(default=None)
 
+    # ---- REALITY_CONTEXT support ----
+    # When this transaction executes inside a ``WITH REALITY_CONTEXT`` block,
+    # the compiler records the context's name and a pre-rendered frame
+    # (worldview / assumptions / value system).  The engine prepends
+    # ``reality_frame`` to the system prompt so the operation reasons within
+    # the declared lens, and logs ``reality_context_name`` to the audit trail.
+    reality_context_name: Optional[str] = Field(default=None)
+    reality_frame: Optional[str] = Field(default=None)
+
     model_config = {"arbitrary_types_allowed": True}
 
 
