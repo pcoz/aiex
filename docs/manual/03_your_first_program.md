@@ -49,15 +49,15 @@ aiex compile triage.ailang
 Program: triage
 Transactions: 1
   TX               Operation  Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0140    4000ms
+  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0126    4000ms
 
-  Total estimated cost:    $0.0140
-  vs. all-Opus baseline:   $0.0900
-  Savings: 84.4%
+  Total estimated cost:    $0.0126
+  vs. all-Opus baseline:   $0.0400
+  Savings: 68.5%
   Estimated latency:       4000ms
 ```
 
-A bit under one and a half cents. `DEDUCE` routed to Sonnet, not Opus
+About one and a quarter cents. `DEDUCE` routed to Sonnet, not Opus
 (Sonnet is the default for logical deduction at `DEPTH: STANDARD`),
 and `RETRIEVAL_BUDGET: NONE` brought the effective neuron count down
 from 1200 to 335.
@@ -108,16 +108,17 @@ aiex compile triage.ailang
 
 ```
   TX               Operation  Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0148    4000ms
+  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0126    4000ms
 
-  Total estimated cost:    $0.0148
-  vs. all-Opus baseline:   $0.0900
-  Savings: 83.5%
+  Total estimated cost:    $0.0126
+  vs. all-Opus baseline:   $0.0400
+  Savings: 68.5%
 ```
 
-The cost moved by a fraction of a cent -- the schema grew the system
-prompt slightly. Nothing escalated tiers; the output is still
-text-heavy but not so voluminous that Sonnet wouldn't handle it.
+The estimate does not move: the budget estimator prices a transaction
+by operation type, depth, retrieval budget and number of inputs, not
+by the size of its contract (the real system prompt does grow by a
+few tokens). Nothing escalated tiers.
 
 Run it again. Now the response is a JSON object with exactly three
 fields, `category` is one of the four permitted strings, and
@@ -165,22 +166,22 @@ Compile:
 
 ```
   TX               Operation  Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0156    4000ms
+  tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0126    4000ms
 ```
 
-The cost drifted up by another small amount -- the two `MUST_INCLUDE`
-concepts are compiled into `{BOUNDARY_INSTRUCTIONS}` in the system
-prompt so the model knows what to include, plus they become post-hoc
-validators. The neuron count and model tier are unchanged.
+The estimate is unchanged again. The two `MUST_INCLUDE` concepts are
+compiled into `{BOUNDARY_INSTRUCTIONS}` in the system prompt so the
+model knows what to include, and they become post-hoc validators.
+The neuron count and model tier are unchanged.
 
-Run it. If `MUST_INCLUDE` fails it is a CRITICAL severity violation
-by default: the transaction rolls back, the missing concept is
-logged, and no state is committed. There is no silent retry loop --
-a CRITICAL failure is a signal to the caller that the operation
-needs re-issuing (with stronger premises or tighter wording). In
-practice Sonnet produces a grounded rationale on the first try, but
-the contract means you notice immediately on the rare run where it
-does not.
+Run it. If `MUST_INCLUDE` fails it is a MAJOR severity violation by
+default: the engine retries with a reinforced prompt that names the
+missing concept, up to `max_retries` (default 2). If the concept is
+still missing after the last retry, the transaction rolls back, the
+violation is logged, and no state is committed. In practice Sonnet
+produces a grounded rationale on the first try, but the contract
+means you notice -- and the runtime corrects or rejects -- the rare
+run where it does not.
 
 ## Pass 4: Forbid Drift with `CANNOT_INCLUDE`
 
@@ -220,17 +221,17 @@ safely.
 Compile one final time:
 
 ```
-  Total estimated cost:    $0.0160
-  vs. all-Opus baseline:   $0.0900
-  Savings: 82.2%
+  Total estimated cost:    $0.0126
+  vs. all-Opus baseline:   $0.0400
+  Savings: 68.5%
 ```
 
 We have added two `MUST_INCLUDE` concepts, two `CANNOT_INCLUDE`
-concepts, an `OUTPUT_FORMAT` with three constrained fields, and the
-program has moved from one and a half cents to one and six-tenths
-cents per run. That is the price of precision: a few extra tokens in
-the system prompt to spell out each constraint, post-hoc validation
-work that runs locally and costs nothing, and a guarantee that
+concepts, and an `OUTPUT_FORMAT` with three constrained fields, and
+the estimate is still about one and a quarter cents per run. The
+price of precision is small: a few extra tokens in the system prompt
+to spell out each constraint, post-hoc validation work that runs
+locally and costs nothing, and a guarantee that
 everything downstream sees is structurally correct or does not reach
 state at all.
 

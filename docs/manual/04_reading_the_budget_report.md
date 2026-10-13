@@ -64,7 +64,7 @@ model: `NONE` saves 865 neurons of compute, `MINIMAL` saves 665, and
 
 The concrete model ID the transaction will dispatch to. This is the
 output of `resolve_routing()`: it starts from the default routing
-table (RETRIEVE -> BERT, DEDUCE -> Sonnet, WEIGH -> Opus, etc.) and
+table (RETRIEVE -> BERT, COMPARE -> Haiku, DEDUCE/WEIGH -> Sonnet, etc.) and
 applies four escalation rules in order:
 
 1. `DEPTH: DEEP` forces at least Sonnet.
@@ -117,7 +117,7 @@ pricing:
 | BERT_CLASS          | $0.00002   | $0.00002    |
 | GENERATIVE_LIGHT    | $0.001     | $0.005      |
 | GENERATIVE_STANDARD | $0.003     | $0.015      |
-| GENERATIVE_DEEP     | $0.015     | $0.075      |
+| GENERATIVE_DEEP     | $0.005     | $0.025      |
 
 Input tokens are estimated from the system-prompt baseline (~500
 tokens), 200 tokens per premise, and 150 tokens per retrieved
@@ -194,18 +194,18 @@ more retrieval budget, then compares the three results.
 
 ```
 Transactions: 4
-Parallel groups: group-1(3)
+Parallel groups: parallel-1(3)
 
   TX                    Operation  Retrieval  Model                 Neurons  Est. Cost  Est. Latency
-  tx-1-tariff_none      DEDUCE     NONE       claude-sonnet-4-6         335  $0.0198    4000ms
-  tx-2-tariff_minimal   DEDUCE     MINIMAL    claude-sonnet-4-6         535  $0.0253    4050ms
-  tx-3-tariff_standard  DEDUCE     STANDARD   claude-sonnet-4-6        1200  $0.0347    4050ms
-  tx-4-compare_runs     COMPARE    NONE       claude-haiku-4-5         1050  $0.0070    2000ms
+  tx-1-tariff_none      DEDUCE     NONE       claude-sonnet-4-6         335  $0.0156    4000ms
+  tx-2-tariff_minimal   DEDUCE     MINIMAL    claude-sonnet-4-6         535  $0.0170    4050ms
+  tx-3-tariff_standard  DEDUCE     STANDARD   claude-sonnet-4-6        1200  $0.0201    4050ms
+  tx-4-compare_runs     COMPARE    STANDARD   claude-haiku-4-5         1050  $0.0056    2050ms
 
-  Total estimated cost:    $0.0868
-  vs. all-Opus baseline:   $0.3400
-  Savings: 74.4%
-  Estimated latency:       6050ms
+  Total estimated cost:    $0.0584
+  vs. all-Opus baseline:   $0.1600
+  Savings: 63.5%
+  Estimated latency:       6100ms
 ```
 
 Reading it line by line:
@@ -214,21 +214,21 @@ Reading it line by line:
   only thing that varies is `RETRIEVAL_BUDGET`. You can see that in
   the Neurons column: 335 -> 535 -> 1200 as `NONE` -> `MINIMAL` ->
   `STANDARD`. That is the retrieval-savings arithmetic made visible.
-  Costs follow suit: $0.02 -> $0.025 -> $0.035. All three stay on
+  Costs follow suit: $0.016 -> $0.017 -> $0.020. All three stay on
   Sonnet because `DEPTH: STANDARD` does not trigger escalation.
 - **TX-4** is the `COMPARE`. Its base routing is BERT, but the output
   schema contains `findings: LIST OF TEXT` and
   `terminology_precision_ranking: LIST OF TEXT` -- qualitative text
   fields -- so rule 4 escalates it to Haiku. That is why you see
   `claude-haiku-4-5` rather than `all-MiniLM-L6-v2`. Cost is only
-  seven-tenths of a cent; Haiku is cheap.
-- **Parallel groups.** The header shows `group-1(3)`, which groups
+  about half a cent; Haiku is cheap.
+- **Parallel groups.** The header shows `parallel-1(3)`, which groups
   TX-1, TX-2, and TX-3. TX-4 depends on all three (it reads their
   committed results) and runs after the group's barrier. Wall-clock
-  latency is max(4000, 4050, 4050) + 2000 = 6,050ms.
-- **Totals.** Nine cents for a four-transaction trade-compliance
+  latency is max(4000, 4050, 4050) + 2050 = 6,100ms.
+- **Totals.** Six cents for a four-transaction trade-compliance
   analysis with three retrieval strategies and a cross-validation.
-  Against an all-Opus baseline of 34 cents, that is a 74% saving --
+  Against an all-Opus baseline of 16 cents, that is a 63% saving --
   and the saving comes entirely from routing `COMPARE` to Haiku and
   keeping `DEDUCE` on Sonnet instead of sending everything to Opus.
 
@@ -244,23 +244,23 @@ for hard rule checks, a `WEIGH` for borderline judgment, and a
 Transactions: 5
 
   TX                         Operation   Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-  tx-1-affordability         CODE        NONE       local-code                  0  $0.0000    10ms
+  tx-1-affordability         CODE        NONE       local-code                  0  $0.0000    100ms
   tx-2-hard_eligibility      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0144    4000ms
-  tx-3-soft_factors          WEIGH       NONE       claude-opus-4-6           666  $0.0135    6000ms
-  tx-4-final_decision        SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0162    6000ms
-  tx-5-audit                 CODE        NONE       local-code                  0  $0.0000    10ms
+  tx-3-soft_factors          WEIGH       NONE       claude-sonnet-4-6         666  $0.0141    4000ms
+  tx-4-final_decision        SYNTHESIZE  NONE       claude-sonnet-4-6         535  $0.0162    4000ms
+  tx-5-audit                 CODE        NONE       local-code                  0  $0.0000    100ms
 
-  Total estimated cost:    $0.0441
-  vs. all-Opus baseline:   $0.3600
-  Savings: 87.8%
-  Estimated latency:       16020ms
+  Total estimated cost:    $0.0447
+  vs. all-Opus baseline:   $0.1200
+  Savings: 62.7%
+  Estimated latency:       8200ms
 ```
 
 A few things stand out:
 
 - **CODE rows are free and fast.** `EXECUTE_CODE python:` blocks
   dispatch to an in-process Python executor, not to an LLM, so they
-  have zero cost and tens-of-milliseconds latency. The loan program
+  have zero cost and a nominal 100ms latency estimate. The loan program
   uses them for the amortisation formula (step 1) and the audit-log
   formatting (step 5) -- exactly the tasks a probabilistic model
   should not be doing. Every dollar of Est. Cost here comes from the
@@ -269,18 +269,19 @@ A few things stand out:
   rule application; Sonnet is the right tier. 335 neurons (1200 minus
   865 retrieval savings) -- `RETRIEVAL_BUDGET: NONE` is appropriate
   because all rules are in the inputs.
-- **`WEIGH` chose Opus.** Authority-weighted judgment is where the
-  frontier model pays off, and the routing table defaults `WEIGH` to
-  Opus. 666 neurons (1531 minus 865 savings).
-- **`SYNTHESIZE` chose Opus.** Integration of the hard + soft outputs
-  into a single regulated decision is a case where you do not want
-  the model cutting corners. 535 neurons (1400 minus 865 savings).
-- **Total: $0.044, saving 87.8%.** The baseline -- all-Opus -- would
-  be $0.36. The saving comes from sending nothing to an LLM that does
-  not need one (the two Python blocks), sending `DEDUCE` to Sonnet,
-  and reserving Opus for the two operations that genuinely need it.
+- **`WEIGH` and `SYNTHESIZE` stay on Sonnet.** The routing table's
+  base tier for both is `GENERATIVE_STANDARD`, and `DEPTH: STANDARD`
+  does not escalate them. 666 neurons for `WEIGH` (1531 minus 865
+  savings) and 535 for `SYNTHESIZE` (1400 minus 865). Declaring
+  `DEPTH: EXHAUSTIVE` on either would route it to Opus, and the
+  report would show the cost of that choice.
+- **Total: $0.0447, saving 62.7%.** The baseline -- all-Opus, at
+  3K input / 1K output tokens per reasoning operation -- would be
+  $0.12. The saving comes from sending nothing to an LLM that does
+  not need one (the two Python blocks) and running the three
+  reasoning steps on Sonnet instead of Opus.
 
-That 87.8% saving is not a marketing claim. It is a direct
+That 62.7% saving is not a marketing claim. It is a direct
 consequence of routing being a compile-time decision made per
 operation, with the accounting visible in the report. When you tune
 the program -- change `DEPTH`, change `RETRIEVAL_BUDGET`, split one

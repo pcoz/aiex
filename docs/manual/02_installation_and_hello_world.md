@@ -114,20 +114,22 @@ Source: hello.ailang
 Transactions: 1
                            Transaction Budget
   TX                Operation  Retrieval  Model              Neurons   Est. Cost  Est. Latency
-  tx-1-weather_fa.  RETRIEVE   MINIMAL    all-MiniLM-L6-v2       200   $0.0001    50ms
+  tx-1-weather_fa.  RETRIEVE   MINIMAL    claude-haiku-4-5       200   $0.0020    2050ms
 
-  Total estimated cost:    $0.0001
-  vs. all-Opus baseline:   $0.0900
-  Savings: 99.9%
-  Estimated latency:       50ms
+  Total estimated cost:    $0.0020
+  vs. all-Opus baseline:   $0.0400
+  Savings: 95.0%
+  Estimated latency:       2050ms
 ```
 
-Because `RETRIEVE` routes to the BERT tier by default, and because
-`DEPTH: SHALLOW` does not trigger escalation, this tiny program costs
-a fraction of a cent and completes in about 50ms of model time. The
-all-Opus baseline is calculated for comparison: if every operation
-had been dispatched to Opus -- the naive default in most LLM apps --
-this program would have cost about nine cents.
+`RETRIEVE` routes to the BERT tier by default, but this operation's
+`OUTPUT_FORMAT` has free-text fields that an embedding model cannot
+fill, so the compiler escalates it to the light generative tier
+(Haiku). `DEPTH: SHALLOW` triggers no further escalation, so this tiny
+program costs a fraction of a cent. The all-Opus baseline is
+calculated for comparison: if every operation had been dispatched to
+Opus -- the naive default in most LLM apps -- the estimate would be
+four cents.
 
 You have now compiled an AILang program. No API calls happened. No
 credits spent. The compiler read your file, resolved routing, computed

@@ -28,9 +28,9 @@ END
 
 This says: the model's response must contain six named concepts. If one is missing, the contract check fires.
 
-**What happens on failure:** per the AIEX contract spec ([`specification.md`](../specification.md) section 6), MUST_INCLUDE violations are assigned severity `CRITICAL` by default in the shipping compiler (see `compiler/compiler.py:315`, which maps MUST_INCLUDE items to CRITICAL). A CRITICAL failure triggers an immediate rollback of the transaction -- state is not modified, no retry is issued, and the runtime logs the violation for the audit trail. The caller is expected to re-issue the operation (typically with stronger premises or tighter wording) rather than the runtime silently retrying.
+**What happens on failure:** per the AIEX contract spec ([`specification.md`](../specification.md) section 6.2), MUST_INCLUDE violations are assigned severity `MAJOR` by default (see `_generate_contract` in `compiler/compiler.py`). A MAJOR failure triggers a retry: the engine appends a `RETRY INSTRUCTION` block naming the missing concept to the system prompt and dispatches again, up to `max_retries` (default 2). If the concept is still missing after the last retry, the transaction rolls back -- state is not modified and the runtime logs the violation for the audit trail.
 
-This means MUST_INCLUDE is cheap when the model is cooperative (one dispatch and commit) and rollback-costly when the model cannot produce the required content -- usually a sign the operation was miscompiled, the premises were insufficient, or the concept list is asking for something the evidence does not support.
+This means MUST_INCLUDE is cheap when the model is cooperative (one dispatch and commit), costs one or two extra dispatches when the model needs a reminder, and ends in a rollback only when the model cannot produce the required content -- usually a sign the operation was miscompiled, the premises were insufficient, or the concept list is asking for something the evidence does not support.
 
 ## CANNOT_INCLUDE -- prohibited concepts
 
@@ -108,9 +108,9 @@ Notice how every decision-critical field is constrained to an enum: the model ca
 
 The contract outcomes are graduated, not binary. From the AIEX spec:
 
-- **CRITICAL**: transaction rolls back. State is not modified. The operation did not happen. `OUTPUT_FORMAT` schema violations are CRITICAL by default -- a malformed JSON response is worse than no response, because downstream code would crash reading it. `MUST_INCLUDE` violations are also CRITICAL by default in the shipping compiler (see `compiler/compiler.py:315`, which maps every MUST_INCLUDE entry to CRITICAL) -- a missing required concept means the operation did not meet its contract and the caller needs to re-issue with stronger premises.
+- **CRITICAL**: transaction rolls back. State is not modified. The operation did not happen. `OUTPUT_FORMAT` schema violations are CRITICAL by default -- a malformed JSON response is worse than no response, because downstream code would crash reading it. A JSON response that cannot be parsed at all is also caught here, as missing schema fields.
 
-- **MAJOR**: transaction retries with reinforced prompt, up to `max_retries` (default 2). The reinforced prompt prepends or appends an explicit instruction about the violated boundary. After max retries, severity escalates to CRITICAL and the transaction rolls back. MAJOR is available to contract authors who want a retry tier for their own checks; none of the three standard contract slots (`OUTPUT_FORMAT`, `MUST_INCLUDE`, `CANNOT_INCLUDE`) default to MAJOR in the shipping compiler.
+- **MAJOR**: transaction retries with reinforced prompt, up to `max_retries` (default 2). The reinforced prompt prepends or appends an explicit instruction about the violated boundary. After max retries, severity escalates to CRITICAL and the transaction rolls back. `MUST_INCLUDE` violations are MAJOR by default.
 
 - **MINOR**: transaction commits with a logged warning. The boundary was violated, but the violation is not serious enough to reject the response. `CANNOT_INCLUDE` is currently MINOR in the shipping runtime (see P3 above); the digest-format contract is MINOR (a slightly-over-length digest gets truncated and committed).
 
@@ -189,7 +189,7 @@ DEDUCE hard_eligibility FROM [eligibility_rules, product, affordability_metrics]
 END
 ```
 
-A response to this operation goes through three checks in sequence. First, the schema validator confirms the JSON has all eleven fields with the right types, and that every `TEXT IN [...]` field contains an allowed value. If any structural check fails, CRITICAL: rollback. Second, the `CHECK-PRESENT` scan confirms the six required concepts are mentioned somewhere in the response. If one is missing, that is also CRITICAL by default (the compiler assigns MUST_INCLUDE items severity CRITICAL) and the transaction rolls back -- no silent retry, just a logged violation for the caller to act on. Third, the CANNOT_INCLUDE scan looks for forbidden speculation. If it finds some, currently MINOR: commit with warning (until BERT-backed validation is enabled).
+A response to this operation goes through three checks in sequence. First, the schema validator confirms the JSON has all eleven fields with the right types, and that every `TEXT IN [...]` field contains an allowed value. If any structural check fails, CRITICAL: rollback. Second, the `CHECK-PRESENT` scan confirms the six required concepts are mentioned somewhere in the response. If one is missing, that is MAJOR by default: the engine retries with a reinforced prompt naming the missing concept, and rolls the transaction back only if the concept is still missing after `max_retries`. Third, the CANNOT_INCLUDE scan looks for forbidden speculation. If it finds some, currently MINOR: commit with warning (until BERT-backed validation is enabled).
 
 A response that passes all three commits atomically to `hard_eligibility`, and the pipeline moves on. A response that fails at the schema or MUST_INCLUDE boundary was never committed; no downstream operation will ever see a broken `hard_eligibility`.
 

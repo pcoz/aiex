@@ -96,7 +96,7 @@ tx-5-audit          CODE        NONE       local-code        $0.0000    100ms
 ```
 
 Two of the five transactions cost nothing because they are code.
-The savings over the all-Opus baseline -- 87.8% on this program --
+The savings over the all-Opus baseline -- 62.7% on this program --
 are partly the routing story told in
 [chapter 11](11_multi_model_routing.md) and partly the fact that
 deterministic steps were not sent to an LLM at all.

@@ -111,11 +111,11 @@ TX-3 (DEDUCE, STANDARD) -> Sonnet  1200 neurons $0.020
 TX-4 (COMPARE)          -> Haiku   1050 neurons $0.006
 
 Total:    $0.058
-Baseline: $0.480 (all-Opus)
-Savings:  87.8%
+Baseline: $0.160 (all-Opus)
+Savings:  63.5%
 ```
 
-The 87.8% figure is the payoff: routing three DEDUCEs to Sonnet and one COMPARE to Haiku, with graduated retrieval budgets, costs $0.058 for a program that would cost $0.480 run as generic INTELLIGENTLY operations on Opus.
+The 63.5% figure is the payoff: routing three DEDUCEs to Sonnet and one COMPARE to Haiku, with graduated retrieval budgets, costs $0.058 for a program that the all-Opus baseline prices at $0.160.
 
 ## The 60-cell matrix
 

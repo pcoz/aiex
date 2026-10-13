@@ -82,9 +82,9 @@ Two detection methods are supported:
   matching with concept expansion (e.g. `causal_chain` expands to
   `["causal_chain", "causal chain", "causal", "chain"]`).
 
-A failed MUST_INCLUDE produces a violation at the severity declared
-in the AILang source. The compiler maps MUST_INCLUDE items to
-`CRITICAL` by default.
+A failed MUST_INCLUDE produces a `MAJOR` violation by default
+(spec section 6.2): the engine retries with a reinforced prompt and
+rolls back only if the content is still missing after `max_retries`.
 
 ### CANNOT_INCLUDE
 
@@ -176,12 +176,13 @@ On commit, three things happen:
    transaction ID and status.
 
 On rollback, only the first and third happen, and the `response`
-field on the stored result is `None`. Downstream transactions that
-listed this one in their `depends_on` and try to read its output
-will find the variable unset. When the engine walks the next
-transaction, it checks `deps_met = all(d in completed for d in tx.depends_on)`; a
-rolled-back dependency means the downstream is skipped entirely,
-with an `ERROR` event logged naming the unmet dependencies.
+field on the stored result is `None`. Only committed transactions
+count as completed. Before dispatching any transaction -- sequential
+or a parallel-group member -- the engine checks that every entry in
+its `depends_on` committed; a rolled-back (or itself skipped)
+dependency means the downstream transaction is skipped entirely,
+with an `ERROR` event logged naming the unmet dependencies, and its
+own dependents are skipped in turn.
 
 This is the atomic commit semantics promised earlier. A failed
 reasoning operation does not leave half-valid data for later steps
@@ -204,7 +205,8 @@ members in the topological order are skipped.
 One honest caveat: the current implementation dispatches the group's
 members in sequence, not concurrently (known issue P4). The parallel
 group still serves as a barrier -- no transaction outside the group
-can start until all members have committed or rolled back -- but
+can start until all members have committed or rolled back, and a
+transaction that depends on a rolled-back member is skipped -- but
 true async dispatch is a future enhancement. The group structure
 is already in the plan, so when concurrency is wired in no AILang
 program will need to change.

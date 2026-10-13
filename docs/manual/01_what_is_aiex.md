@@ -9,19 +9,19 @@ Program: loan-eligibility
 Transactions: 5
 
 TX                  Operation   Retrieval  Model                  Neurons  Est. Cost  Est. Latency
-tx-1-affordability  CODE        NONE       local-code                  0  $0.0000    10ms
+tx-1-affordability  CODE        NONE       local-code                  0  $0.0000    100ms
 tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6         335  $0.0144    4000ms
-tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6           666  $0.0135    6000ms
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6           535  $0.0162    6000ms
-tx-5-audit          CODE        NONE       local-code                  0  $0.0000    10ms
+tx-3-soft-factors   WEIGH       NONE       claude-sonnet-4-6         666  $0.0141    4000ms
+tx-4-synth-decision SYNTHESIZE  NONE       claude-sonnet-4-6         535  $0.0162    4000ms
+tx-5-audit          CODE        NONE       local-code                  0  $0.0000    100ms
 
-  Total estimated cost:    $0.0441
-  vs. all-Opus baseline:   $0.3600
-  Savings: 87.8%
-  Estimated latency:       16020ms
+  Total estimated cost:    $0.0447
+  vs. all-Opus baseline:   $0.1200
+  Savings: 62.7%
+  Estimated latency:       8200ms
 ```
 
-`$0.0441 per run. Sixteen seconds. 88% cheaper than the naive approach.`
+`$0.0447 per run. About eight seconds. 63% cheaper than the naive all-Opus approach.`
 The developer sees that number before paying a cent. If it is too high,
 they change `DEPTH: DEEP` to `DEPTH: STANDARD`, or drop a
 `RETRIEVAL_BUDGET: STANDARD` down to `MINIMAL`, recompile, and watch the
@@ -95,12 +95,12 @@ four-tier model pool:
 | BERT_CLASS          | all-MiniLM-L6-v2     | ~$0.00002 / ~$0.00002 |
 | GENERATIVE_LIGHT    | claude-haiku-4-5     | $0.001 / $0.005       |
 | GENERATIVE_STANDARD | claude-sonnet-4-6    | $0.003 / $0.015       |
-| GENERATIVE_DEEP     | claude-opus-4-6      | $0.015 / $0.075       |
+| GENERATIVE_DEEP     | claude-opus-4-6      | $0.005 / $0.025       |
 
 `RETRIEVE` and many `COMPARE` operations route to BERT, because what
 they actually do -- classification, ranking, lookup -- is what BERT
-was designed for. `DEDUCE`, `TRACE`, and `SYNTHESIZE` route to Sonnet
-by default. `WEIGH` (authority-weighted judgment) routes to Opus.
+was designed for. `DEDUCE`, `TRACE`, `SYNTHESIZE`, and `WEIGH` route to Sonnet
+by default; Opus is reached by escalation (`DEPTH: EXHAUSTIVE`).
 `DEPTH: DEEP` and `DEPTH: EXHAUSTIVE` escalate any operation up the
 tier ladder. A BERT-eligible operation with qualitative text in its
 output schema is also escalated, because BERT cannot generate prose.

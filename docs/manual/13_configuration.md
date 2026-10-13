@@ -56,14 +56,14 @@ DEFAULT_MODEL_POOL: dict[ModelTier, ModelConfig] = {
     ModelTier.BERT_CLASS: ModelConfig(
         tier=ModelTier.BERT_CLASS,
         model_id="sentence-transformers/all-MiniLM-L6-v2",
-        cost_per_1k_in=0.0,
-        cost_per_1k_out=0.0,
+        cost_per_1k_in=0.00002,
+        cost_per_1k_out=0.00002,
         max_tokens=512,
         latency_class="low",
     ),
     ModelTier.GENERATIVE_LIGHT: ModelConfig(
         tier=ModelTier.GENERATIVE_LIGHT,
-        model_id="claude-3-5-haiku-20241022",  # swap this
+        model_id="claude-haiku-4-5",  # swap this
         cost_per_1k_in=0.001,
         cost_per_1k_out=0.005,
         max_tokens=8192,
@@ -73,21 +73,20 @@ DEFAULT_MODEL_POOL: dict[ModelTier, ModelConfig] = {
 }
 ```
 
-Two things to keep in sync when you edit the pool:
+The pool is the single source of truth for both halves of a tier:
 
-1. `model_id` is the literal string sent to the Anthropic SDK. It
-   must match one of the models your API key is authorised for.
-2. `cost_per_1k_in` / `cost_per_1k_out` drive the budget report.
-   Update them when pricing changes, or the "estimated cost" column
-   will drift from reality.
+1. `model_id` is the literal string the dispatcher sends to the
+   Anthropic SDK (`MODEL_ID_MAP` in `runtime/dispatch.py` is derived
+   from the pool). It must match one of the models your API key is
+   authorised for.
+2. `cost_per_1k_in` / `cost_per_1k_out` drive the budget report and
+   the all-Opus baseline (`COST_TABLE` in `compiler/budget.py` is
+   derived from the pool). Update them when pricing changes, or the
+   "estimated cost" column will drift from reality.
 
-Note: the shipping `routing.py` `DEFAULT_MODEL_POOL` uses dated
-model IDs (for example `claude-sonnet-4-20250514`, `claude-haiku-4-5-...`)
-that reflect the versions available when the runtime was built;
-production users should update these to the latest Sonnet, Opus, and
-Haiku IDs available for their account (the chapter text elsewhere in
-this manual refers to those models by their short, undated names
-like `claude-sonnet-4-6`).
+The shipped pool uses `claude-haiku-4-5`, `claude-sonnet-4-6`, and
+`claude-opus-4-6` at Anthropic's published per-token prices; the
+source URL and date are in the comment above `DEFAULT_MODEL_POOL`.
 
 There is a separate layer in `src/aiex/runtime/dispatch.py` called
 `MODEL_ID_MAP` that maps tier to a short model-ID string used during

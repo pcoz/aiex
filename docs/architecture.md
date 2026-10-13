@@ -250,8 +250,8 @@ The compiler transforms the AST into an executable plan through three sub-stages
 - Computes effective neurons per transaction: base neuron count minus retrieval
   savings (NONE saves 865 neurons; MINIMAL saves 665; STANDARD/FULL save 0)
 - Estimates input/output tokens from content counts and depth multipliers
-- Applies per-tier cost tables (BERT: ~$0/1K, Haiku: $0.001/$0.005,
-  Sonnet: $0.003/$0.015, Opus: $0.015/$0.075)
+- Applies per-tier cost tables derived from `DEFAULT_MODEL_POOL` (BERT:
+  ~$0/1K, Haiku: $0.001/$0.005, Sonnet: $0.003/$0.015, Opus: $0.005/$0.025)
 - Accounts for BERT retrieval phase cost ($0.00004) and latency (+50ms)
 - Calculates parallel execution latency: max within each group, sum across groups
 
@@ -407,7 +407,7 @@ BERT-family models excel at.
 
 ```
  +-------------------------------------------------------------------+
- | BERT_CLASS          | colbert-v2, all-MiniLM-L6-v2                |
+ | BERT_CLASS          | all-MiniLM-L6-v2                            |
  | Cost: ~$0           | Capability: retrieval, classification       |
  | Latency: ~50ms      | Max tokens: 512                            |
  +-------------------------------------------------------------------+
@@ -420,7 +420,7 @@ BERT-family models excel at.
  | Latency: ~4000ms    | Max tokens: 16384                          |
  +-------------------------------------------------------------------+
  | GENERATIVE_DEEP     | claude-opus-4-6                             |
- | Cost: $0.015/$0.075 | Capability: all (frontier)                  |
+ | Cost: $0.005/$0.025 | Capability: all (frontier)                  |
  | Latency: ~6000ms    | Max tokens: 32768                          |
  +-------------------------------------------------------------------+
  | LOCAL_CODE          | local Python interpreter (in-process exec)  |
@@ -933,7 +933,7 @@ Tier pricing (USD per 1K tokens):
 | BERT_CLASS          | $0.00002 | $0.00002 |
 | GENERATIVE_LIGHT    | $0.001   | $0.005   |
 | GENERATIVE_STANDARD | $0.003   | $0.015   |
-| GENERATIVE_DEEP     | $0.015   | $0.075   |
+| GENERATIVE_DEEP     | $0.005   | $0.025   |
 
 ### 10.4 Latency Estimation
 
@@ -950,11 +950,11 @@ The compiler detects independent operations and groups them for concurrent
 execution. For the test_10 program:
 
 ```
-  Sequential:  TX-1 (4000ms) + TX-2 (4050ms) + TX-3 (4050ms) + TX-4 (2000ms)
-               = 14,100ms
+  Sequential:  TX-1 (4000ms) + TX-2 (4050ms) + TX-3 (4050ms) + TX-4 (2050ms)
+               = 14,150ms
 
-  Parallel:    max(TX-1, TX-2, TX-3) (4050ms) + TX-4 (2000ms)
-               = 6,050ms
+  Parallel:    max(TX-1, TX-2, TX-3) (4050ms) + TX-4 (2050ms)
+               = 6,100ms
 
   Speedup:     2.3x
 ```
@@ -962,17 +962,18 @@ execution. For the test_10 program:
 ### 10.6 Baseline Comparison
 
 Every budget report includes comparison against an all-Opus baseline (every
-operation dispatched to claude-opus-4-6 with no routing optimization):
+LLM operation dispatched to claude-opus-4-6 with no routing optimization;
+`EXECUTE_CODE` blocks are excluded):
 
 ```
-  baseline_cost = num_transactions * (3000/1000 * $0.015 + 1000/1000 * $0.075)
-                = num_transactions * $0.12
+  baseline_cost = num_llm_transactions * (3000/1000 * $0.005 + 1000/1000 * $0.025)
+                = num_llm_transactions * $0.04
 
   savings_pct   = (1 - actual_cost / baseline_cost) * 100
 ```
 
-In the live test, the routing-optimized plan achieved 87.8% cost savings
-($0.058 vs. $0.48 baseline).
+For test_10 the routing-optimized plan estimates 63.5% savings ($0.058 vs.
+$0.16 baseline); for the loan-eligibility example, 62.7% ($0.0447 vs. $0.12).
 
 ---
 

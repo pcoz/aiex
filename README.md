@@ -11,13 +11,13 @@ Transactions: 5
 |-------------------|---------------|-------------|-----------|
 | tx-1-codeblock    | CODE_EXECUTION| local-code  |   $0.0000 |
 | tx-2-hard_elig... | DEDUCE        | claude-...  |   $0.0144 |
-| tx-3-soft_fact... | WEIGH         | claude-...  |   $0.0135 |
+| tx-3-soft_fact... | WEIGH         | claude-...  |   $0.0141 |
 | tx-4-final_dec... | SYNTHESIZE    | claude-...  |   $0.0162 |
 | tx-5-codeblock    | CODE_EXECUTION| local-code  |   $0.0000 |
 
-  Total estimated cost:    $0.0441
-  vs. all-Opus baseline:   $0.3600
-  Savings: 87.8%
+  Total estimated cost:    $0.0447
+  vs. all-Opus baseline:   $0.1200
+  Savings: 62.7%
   Estimated latency:       8200ms
 ```
 
@@ -27,7 +27,7 @@ Transactions: 5
 
 | Need | Without AIEX | With AIEX |
 |---|---|---|
-| Cost at scale | Pay Opus prices on every call | 80–90% lower via multi-tier routing per reasoning type |
+| Cost at scale | Pay Opus prices on every call | Multi-tier routing per reasoning type (the loan-eligibility example estimates 63% below an all-Opus baseline) |
 | Predictable budget | Find out at month-end | Pre-execution report shows cost, latency, routing per transaction |
 | Audit trail | Bolted on; often incomplete | Built in: every transaction logged with rationale, contract violations, retries |
 | Output validation | Post-hoc parsing in your app | Contracts enforced at the runtime boundary with retry-with-reinforcement and rollback |
@@ -37,9 +37,9 @@ Transactions: 5
 ## Main advantages
 
 - **Pre-execution budget reports.** See the cost, latency, and routing for every transaction *before* you run the program.
-- **Multi-tier model routing.** RETRIEVE/COMPARE → BERT/Haiku; TRACE/DEDUCE → Sonnet; WEIGH/SYNTHESIZE → Opus. Escalation rules kick in for `DEPTH: DEEP+` and qualitative output schemas. Routing decisions are logged.
-- **Output contracts.** `MUST_INCLUDE`, `CANNOT_INCLUDE`, `OUTPUT_FORMAT` (with constrained `TEXT IN [...]` enums and nested `LIST OF OBJECT { ... }` schemas) become first-class validators with severity escalation: CRITICAL rolls back, MAJOR retries with reinforced prompts, MINOR commits with warning.
-- **Transactional atomicity.** Each operation is dispatched, validated, and committed (or rolled back) as a unit. Failed transactions don't leak invalid data into program state; downstream operations see only committed results.
+- **Multi-tier model routing.** RETRIEVE/COMPARE → BERT/Haiku; TRACE/DEDUCE/WEIGH/SYNTHESIZE → Sonnet; `DEPTH: EXHAUSTIVE` escalates to Opus. Escalation rules kick in for `DEPTH: DEEP+` and qualitative output schemas. Routing decisions are logged.
+- **Output contracts.** `MUST_INCLUDE`, `CANNOT_INCLUDE`, `OUTPUT_FORMAT` (with constrained `TEXT IN [...]` enums and nested `LIST OF OBJECT { ... }` schemas) become first-class validators with severity escalation: CRITICAL rolls back, MAJOR retries with reinforced prompts (up to `max_retries`, then rolls back), MINOR commits with warning. By default `OUTPUT_FORMAT` violations are CRITICAL, missing `MUST_INCLUDE` content is MAJOR, and `CANNOT_INCLUDE` hits are MINOR.
+- **Transactional atomicity.** Each operation is dispatched, validated, and committed (or rolled back) as a unit. Failed transactions don't leak invalid data into program state; operations that depend on a rolled-back transaction (directly or through a parallel group) are skipped and logged rather than run with missing input.
 - **Deterministic computation alongside reasoning.** `EXECUTE_CODE python: ... END_EXECUTE` blocks compile to local-execution transactions ($0 cost, ~100ms latency). AILang variables marshal in/out automatically, so you can interleave amortisation math with `WEIGH` operations seamlessly.
 - **Auditable execution log.** Every variable mutation, every transaction commit/rollback, every contract violation, every retry — timestamped, in `state.execution_log`.
 

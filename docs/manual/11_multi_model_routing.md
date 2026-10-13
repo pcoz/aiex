@@ -2,11 +2,11 @@
 
 The single biggest cost lever in AIEX is that it does not send every
 operation to Opus. An all-Opus baseline for the loan eligibility
-example costs $0.36 per run; the routed plan costs $0.044 -- an 87.8%
-reduction, achieved entirely by directing each operation to the
-cheapest tier that can produce the required output. On the larger
-`test_10` benchmark the same mechanism yields 87.8% savings for a
-total of $0.0584 per run.
+example costs $0.12 per run; the routed plan costs $0.0447 -- a 62.7%
+reduction, achieved by directing each operation to the cheapest tier
+that can produce the required output and running deterministic steps
+as code. On the `test_10` benchmark the same mechanism yields 63.5%
+savings for a total of $0.0584 per run.
 
 This chapter is about how AIEX makes those routing decisions. The
 rationale, the default routing table, the escalation rules, and how
@@ -36,10 +36,10 @@ execution. Each generative tier has one concrete model configured in
 
 | Tier                | Default model                           | Per 1K in / out |
 |---------------------|-----------------------------------------|-----------------|
-| BERT_CLASS          | sentence-transformers/all-MiniLM-L6-v2  | $0 / $0         |
-| GENERATIVE_LIGHT    | claude-3-5-haiku-20241022               | $0.001 / $0.005 |
-| GENERATIVE_STANDARD | claude-sonnet-4-20250514                | $0.003 / $0.015 |
-| GENERATIVE_DEEP     | claude-opus-4-20250514                  | $0.015 / $0.075 |
+| BERT_CLASS          | sentence-transformers/all-MiniLM-L6-v2  | ~$0.00002 / ~$0.00002 |
+| GENERATIVE_LIGHT    | claude-haiku-4-5                        | $0.001 / $0.005 |
+| GENERATIVE_STANDARD | claude-sonnet-4-6                       | $0.003 / $0.015 |
+| GENERATIVE_DEEP     | claude-opus-4-6                         | $0.005 / $0.025 |
 | LOCAL_CODE          | (Python `exec`, no model)               | $0 / $0         |
 
 BERT_CLASS is used for retrieval similarity; it does not generate
@@ -48,7 +48,9 @@ text. LOCAL_CODE is the sentinel used by `EXECUTE_CODE` blocks; see
 
 The pool lives in `src/aiex/models/routing.py` as a single dict. If
 you swap model providers or negotiate different pricing, that is the
-file to edit -- the compiler and budget estimator both read from it.
+file to edit -- the dispatcher (model IDs), the budget estimator and
+the all-Opus baseline (prices) all read from it. The shipped prices
+are Anthropic's published per-token rates for those model IDs.
 See [chapter 13](13_configuration.md) for a worked override.
 
 ## The Default Routing Table
@@ -68,11 +70,9 @@ that as the starting point:
 | INTELLIGENTLY  | GENERATIVE_STANDARD | Safe default for untyped operations                      |
 
 A note on SYNTHESIZE and WEIGH. The base tier in the routing table is
-`GENERATIVE_STANDARD` for both, and escalation to Opus happens
-through the DEPTH rule. In the loan eligibility program WEIGH and
-SYNTHESIZE both land on Opus because the schema and context push
-them there in practice; your own programs may stay on Sonnet if
-DEPTH is `STANDARD` and the output is simple.
+`GENERATIVE_STANDARD` for both, and escalation to Opus happens only
+through the DEPTH rule (`DEPTH: EXHAUSTIVE`). In the loan eligibility
+program both run at `DEPTH: STANDARD`, so both stay on Sonnet.
 
 Each table entry also carries a temperature (0.0 for RETRIEVE, 0.4
 for SYNTHESIZE), a template name, and a neuron budget -- the target
@@ -120,8 +120,8 @@ receive the dispatch:
 ```
 TX                  Operation   Retrieval  Model                  Est. Cost
 tx-2-hard-elig      DEDUCE      NONE       claude-sonnet-4-6      $0.0144
-tx-3-soft-factors   WEIGH       NONE       claude-opus-4-6        $0.0135
-tx-4-synth-decision SYNTHESIZE  NONE       claude-opus-4-6        $0.0162
+tx-3-soft-factors   WEIGH       NONE       claude-sonnet-4-6      $0.0141
+tx-4-synth-decision SYNTHESIZE  NONE       claude-sonnet-4-6      $0.0162
 ```
 
 If you want to see the escalation reason, inspect the plan
