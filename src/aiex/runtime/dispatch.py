@@ -16,6 +16,7 @@ This module implements the two-phase dispatch strategy:
     composed prompt is sent to the appropriate Claude model. Model selection
     follows the compiler's routing decision:
       - BERT_CLASS          -> colbert-v2 (retrieval only, not used for generation)
+      (model IDs come from DEFAULT_MODEL_POOL in models/routing.py)
       - GENERATIVE_LIGHT    -> claude-haiku-4-5 (fast, cheap)
       - GENERATIVE_STANDARD -> claude-sonnet-4-6 (balanced)
       - GENERATIVE_DEEP     -> claude-opus-4-6 (highest quality)
@@ -38,6 +39,7 @@ from typing import Any, Protocol
 
 from aiex.models.ast_nodes import RetrievalBudget
 from aiex.models.plan import ModelTier, RoutingDecision, TransactionPlan
+from aiex.models.routing import DEFAULT_MODEL_POOL
 from aiex.models.state import DispatchMeta
 
 
@@ -178,12 +180,10 @@ class MockBertClient:
 # Maps the compiler's abstract model tier to a concrete model identifier.
 # The compiler decides the tier based on operation complexity and DEPTH;
 # this map resolves it to an actual API model string. BERT_CLASS is used
-# only for Phase 1 retrieval (not for generation dispatch).
+# only for Phase 1 retrieval (not for generation dispatch).  Derived from
+# DEFAULT_MODEL_POOL so dispatch calls exactly the models the budget prices.
 MODEL_ID_MAP: dict[ModelTier, str] = {
-    ModelTier.BERT_CLASS: "colbert-v2",
-    ModelTier.GENERATIVE_LIGHT: "claude-haiku-4-5",
-    ModelTier.GENERATIVE_STANDARD: "claude-sonnet-4-6",
-    ModelTier.GENERATIVE_DEEP: "claude-opus-4-6",
+    tier: cfg.model_id for tier, cfg in DEFAULT_MODEL_POOL.items()
 }
 
 

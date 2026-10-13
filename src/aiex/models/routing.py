@@ -33,24 +33,34 @@ from aiex.models.plan import (
 
 
 # ---------------------------------------------------------------------------
-# Model pool -- realistic costs as of early 2026
+# Model pool -- the single source of truth for model IDs and prices
 # ---------------------------------------------------------------------------
-# One concrete model per tier.  The budget estimator uses these prices to
-# calculate pre-execution cost reports.  Update these when Anthropic
-# publishes new pricing or when you swap in different model IDs.
+# One concrete model per tier.  The dispatcher sends ``model_id`` to the API
+# (``runtime/dispatch.py: MODEL_ID_MAP``), and the budget estimator and the
+# all-Opus baseline price tokens with ``cost_per_1k_in`` / ``cost_per_1k_out``
+# (``compiler/budget.py: COST_TABLE``).  Change a model or a price here and
+# both follow.
+#
+# Prices are Anthropic's published first-party base rates (no caching):
+#   claude-haiku-4-5   $1 / MTok in,  $5 / MTok out
+#   claude-sonnet-4-6  $3 / MTok in, $15 / MTok out
+#   claude-opus-4-6    $5 / MTok in, $25 / MTok out
+# Source: https://platform.claude.com/docs/en/about-claude/pricing
+# (checked 2026-10-13).
 
 DEFAULT_MODEL_POOL: dict[ModelTier, ModelConfig] = {
     ModelTier.BERT_CLASS: ModelConfig(
         tier=ModelTier.BERT_CLASS,
         model_id="sentence-transformers/all-MiniLM-L6-v2",
-        cost_per_1k_in=0.0,
-        cost_per_1k_out=0.0,
+        # Local embedding model: nominal compute cost only.
+        cost_per_1k_in=0.00002,
+        cost_per_1k_out=0.00002,
         max_tokens=512,
         latency_class="low",
     ),
     ModelTier.GENERATIVE_LIGHT: ModelConfig(
         tier=ModelTier.GENERATIVE_LIGHT,
-        model_id="claude-3-5-haiku-20241022",
+        model_id="claude-haiku-4-5",
         cost_per_1k_in=0.001,
         cost_per_1k_out=0.005,
         max_tokens=8192,
@@ -58,7 +68,7 @@ DEFAULT_MODEL_POOL: dict[ModelTier, ModelConfig] = {
     ),
     ModelTier.GENERATIVE_STANDARD: ModelConfig(
         tier=ModelTier.GENERATIVE_STANDARD,
-        model_id="claude-sonnet-4-20250514",
+        model_id="claude-sonnet-4-6",
         cost_per_1k_in=0.003,
         cost_per_1k_out=0.015,
         max_tokens=16384,
@@ -66,9 +76,9 @@ DEFAULT_MODEL_POOL: dict[ModelTier, ModelConfig] = {
     ),
     ModelTier.GENERATIVE_DEEP: ModelConfig(
         tier=ModelTier.GENERATIVE_DEEP,
-        model_id="claude-opus-4-20250514",
-        cost_per_1k_in=0.015,
-        cost_per_1k_out=0.075,
+        model_id="claude-opus-4-6",
+        cost_per_1k_in=0.005,
+        cost_per_1k_out=0.025,
         max_tokens=32768,
         latency_class="high",
     ),

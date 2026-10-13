@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from aiex.models.ast_nodes import DepthLevel, ReasoningType, RetrievalBudget
 from aiex.models.plan import BudgetEstimate, ModelTier, RoutingDecision
+from aiex.models.routing import DEFAULT_MODEL_POOL
 
 # ---------------------------------------------------------------------------
 # Neuron counts from the AILang v0.8.2 specification
@@ -80,13 +81,13 @@ DEPTH_TOKEN_MULTIPLIER: dict[DepthLevel, float] = {
 # ---------------------------------------------------------------------------
 # Per-tier pricing (USD per 1K tokens): (input, output)
 # ---------------------------------------------------------------------------
-# These reflect approximate API pricing.  BERT_CLASS is near-zero because
-# embedding models are orders of magnitude cheaper than generative models.
+# Derived from DEFAULT_MODEL_POOL (models/routing.py) so the budget report
+# prices exactly the models the dispatcher calls.  BERT_CLASS is near-zero
+# because embedding models are orders of magnitude cheaper than generative
+# models.
 COST_TABLE: dict[ModelTier, tuple[float, float]] = {
-    ModelTier.BERT_CLASS: (0.00002, 0.00002),
-    ModelTier.GENERATIVE_LIGHT: (0.001, 0.005),
-    ModelTier.GENERATIVE_STANDARD: (0.003, 0.015),
-    ModelTier.GENERATIVE_DEEP: (0.015, 0.075),
+    tier: (cfg.cost_per_1k_in, cfg.cost_per_1k_out)
+    for tier, cfg in DEFAULT_MODEL_POOL.items()
 }
 
 # ---------------------------------------------------------------------------
@@ -204,9 +205,5 @@ def calculate_budget(
 
 def _model_id_for_tier(tier: ModelTier) -> str:
     """Map a model tier enum to its concrete model identifier string."""
-    return {
-        ModelTier.BERT_CLASS: "colbert-v2",
-        ModelTier.GENERATIVE_LIGHT: "claude-haiku-4-5",
-        ModelTier.GENERATIVE_STANDARD: "claude-sonnet-4-6",
-        ModelTier.GENERATIVE_DEEP: "claude-opus-4-6",
-    }.get(tier, "unknown")
+    cfg = DEFAULT_MODEL_POOL.get(tier)
+    return cfg.model_id if cfg else "unknown"

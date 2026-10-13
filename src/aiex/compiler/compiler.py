@@ -56,7 +56,7 @@ from aiex.models.plan import (
     TransactionContract,
     TransactionPlan,
 )
-from aiex.models.routing import resolve_routing
+from aiex.models.routing import DEFAULT_MODEL_POOL, resolve_routing
 
 
 def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionPlan:
@@ -419,8 +419,9 @@ def _calculate_baseline_cost(transactions: list[TransactionPlan]) -> float:
     compiler's value proposition is the savings percentage between this
     baseline and the optimized plan's actual cost.
     """
-    opus_cost_in = 0.015
-    opus_cost_out = 0.075
+    opus = DEFAULT_MODEL_POOL[ModelTier.GENERATIVE_DEEP]
+    opus_cost_in = opus.cost_per_1k_in
+    opus_cost_out = opus.cost_per_1k_out
     total = 0.0
     for tx in transactions:
         # Code blocks have no LLM baseline -- they would cost $0 in any
