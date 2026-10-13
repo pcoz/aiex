@@ -81,6 +81,7 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
     # dependencies have already been processed.
     transactions: list[TransactionPlan] = []
     budgets: list[BudgetEstimate] = []
+    baseline_cost = 0.0
 
     for op_id in sorted_ids:
         op = graph.nodes[op_id]
@@ -154,28 +155,34 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
         # -- Budget: estimate tokens, cost, and latency --
         # num_input_sources counts FROM sources + the APPLY TO / ON target (if any),
         # which determines how many premise tokens to estimate.
-        budget = calculate_budget(
+        budget_args = dict(
             tx_id=op_id,
             reasoning_type=op.reasoning_type,
             depth=op.depth,
             retrieval=op.retrieval_budget,
-            routing=routing,
             num_input_sources=(
                 len(op.from_sources)
                 + (1 if op.apply_to else 0)
                 + (1 if op.on_topic else 0)
             ),
         )
+        budget = calculate_budget(routing=routing, **budget_args)
         budgets.append(budget)
+
+        # -- Baseline: the same estimate with the model forced to Opus --
+        # Identical token counts and retrieval cost, so the savings
+        # percentage measures routing alone.
+        opus_routing = routing.model_copy(
+            update={"escalated_to": ModelTier.GENERATIVE_DEEP}
+        )
+        baseline_cost += calculate_budget(routing=opus_routing, **budget_args).est_cost
 
     # ---- Step 5: Emit -- aggregate totals and produce the final plan ----
     total_cost = sum(b.est_cost for b in budgets)
 
-    # Baseline comparison: what would this program cost if every operation
-    # ran on Opus with no routing optimization?  This lets the user see
-    # how much the AIEX compiler saves through tier routing and retrieval
-    # budget tuning.
-    baseline_cost = _calculate_baseline_cost(transactions)
+    # Baseline comparison (accumulated above): what would this program cost
+    # if every LLM operation ran on Opus with the same token estimates?
+    # Code blocks cost $0 in both plans.
 
     # Wall-clock latency: parallel groups count as max(group) not sum(group).
     total_latency = _calculate_total_latency(transactions, budgets, graph.parallel_groups)
@@ -414,30 +421,6 @@ def _generate_contract(op: OperationNode) -> TransactionContract:
         retrieval_compliance_level=op.retrieval_budget,
         max_retries=2,
     )
-
-
-def _calculate_baseline_cost(transactions: list[TransactionPlan]) -> float:
-    """Calculate what it would cost if everything ran on Opus with full retrieval.
-
-    This is the "naive" baseline: every operation goes to Opus (the most
-    expensive tier) with average token counts (3K in, 1K out).  The AIEX
-    compiler's value proposition is the savings percentage between this
-    baseline and the optimized plan's actual cost.
-    """
-    opus = DEFAULT_MODEL_POOL[ModelTier.GENERATIVE_DEEP]
-    opus_cost_in = opus.cost_per_1k_in
-    opus_cost_out = opus.cost_per_1k_out
-    total = 0.0
-    for tx in transactions:
-        # Code blocks have no LLM baseline -- they would cost $0 in any
-        # plan, optimized or naive.  Excluding them keeps the savings
-        # percentage honest.
-        if tx.code_block_body is not None:
-            continue
-        est_in = 3000  # average input tokens per operation
-        est_out = 1000  # average output tokens per operation
-        total += (est_in / 1000 * opus_cost_in) + (est_out / 1000 * opus_cost_out)
-    return total
 
 
 def _calculate_total_latency(

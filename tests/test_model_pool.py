@@ -59,8 +59,10 @@ END
 ''')
     plan = compile_ailang(program, "test_model_pool")
     deep = DEFAULT_MODEL_POOL[ModelTier.GENERATIVE_DEEP]
-    # one LLM transaction at the baseline's 3K-in / 1K-out assumption
-    expected = 3 * deep.cost_per_1k_in + 1 * deep.cost_per_1k_out
+    # the baseline prices the routed token estimate at the pool's Opus rates
+    b = plan.budget[0]
+    expected = (b.est_tokens_in * deep.cost_per_1k_in
+                + b.est_tokens_out * deep.cost_per_1k_out) / 1000
     assert plan.vs_baseline_cost == pytest.approx(expected, abs=1e-4)
 
 
