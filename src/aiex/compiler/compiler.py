@@ -140,6 +140,7 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
             parallel_group=parallel_group,
             depends_on=graph.edges.get(op_id, []),
             apply_to=op.apply_to,
+            on_topic=op.on_topic,
             against=op.against,
             sources=list(op.sources),
             dimensions=list(op.dimensions),
@@ -151,7 +152,7 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
         transactions.append(tx)
 
         # -- Budget: estimate tokens, cost, and latency --
-        # num_input_sources counts FROM sources + the APPLY TO target (if any),
+        # num_input_sources counts FROM sources + the APPLY TO / ON target (if any),
         # which determines how many premise tokens to estimate.
         budget = calculate_budget(
             tx_id=op_id,
@@ -159,7 +160,11 @@ def compile_ailang(program: Program, source_file: str = "<stdin>") -> ExecutionP
             depth=op.depth,
             retrieval=op.retrieval_budget,
             routing=routing,
-            num_input_sources=len(op.from_sources) + (1 if op.apply_to else 0),
+            num_input_sources=(
+                len(op.from_sources)
+                + (1 if op.apply_to else 0)
+                + (1 if op.on_topic else 0)
+            ),
         )
         budgets.append(budget)
 

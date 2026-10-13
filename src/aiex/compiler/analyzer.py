@@ -138,7 +138,7 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
     def get_references(op: OperationNode) -> set[str]:
         """Collect every name this operation reads from.
 
-        This includes FROM sources, APPLY TO targets, SOURCES, and AGAINST
+        This includes FROM sources, APPLY TO targets, ON topics, SOURCES, and AGAINST
         references.  The caller checks each name against ``result_names``
         to decide whether it creates a dependency edge (result reference)
         or can be ignored (SET variable / literal).
@@ -148,6 +148,8 @@ def analyze_dependencies(program: Program) -> DependencyGraph:
             refs.add(src)
         if op.apply_to:
             refs.add(op.apply_to)
+        if op.on_topic:
+            refs.add(op.on_topic)
         for src in op.sources:
             refs.add(src)
         if op.against:

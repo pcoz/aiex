@@ -585,6 +585,20 @@ class AiexEngine:
                 else:
                     parts.append(str(value))
 
+        # Add ON <topic> (WEIGH).  If the topic names a program variable its
+        # value is the data being weighed and must reach the model; otherwise
+        # it is a dimension label and is shown as-is.
+        if tx.on_topic:
+            value = state.get_variable(tx.on_topic)
+            if value is not None:
+                parts.append(f"\nON {tx.on_topic}:")
+                if isinstance(value, (dict, list)):
+                    parts.append(json.dumps(value, indent=2, default=str))
+                else:
+                    parts.append(str(value))
+            else:
+                parts.append(f"\nON: {tx.on_topic}")
+
         # Add AGAINST (for COMPARE)
         if tx.against:
             parts.append(f"\nEVALUATE AGAINST: {tx.against}")
@@ -600,6 +614,10 @@ class AiexEngine:
                 value = state.get_variable(src)
                 if value is not None:
                     parts.append(f"  {src}: {json.dumps(value, default=str)[:500]}")
+                else:
+                    # Not a program variable: a named factor / source label.
+                    # List it rather than silently dropping it.
+                    parts.append(f"  {src}")
 
         return "\n".join(parts) if parts else "Execute the operation as specified."
 
@@ -617,6 +635,10 @@ class AiexEngine:
                 parts.append(str(value))
         if tx.apply_to:
             value = state.get_variable(tx.apply_to)
+            if value:
+                parts.append(json.dumps(value, default=str) if isinstance(value, dict) else str(value))
+        if tx.on_topic:
+            value = state.get_variable(tx.on_topic)
             if value:
                 parts.append(json.dumps(value, default=str) if isinstance(value, dict) else str(value))
         return " ".join(parts)

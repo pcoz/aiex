@@ -237,6 +237,9 @@ class TransactionPlan(_Frozen):
     depends_on: list[str] = Field(default_factory=list)
     # Passthrough fields from the AST OperationNode.
     apply_to: Optional[str] = Field(default=None)
+    # WEIGH-specific: the ON <topic> clause.  When it names a program
+    # variable the engine renders that variable's value into the prompt.
+    on_topic: Optional[str] = Field(default=None)
     against: Optional[str] = Field(default=None)
     sources: list[str] = Field(default_factory=list)
     dimensions: list[str] = Field(default_factory=list)
