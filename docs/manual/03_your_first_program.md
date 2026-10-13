@@ -52,8 +52,8 @@ Transactions: 1
   tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0126    4000ms
 
   Total estimated cost:    $0.0126
-  vs. all-Opus baseline:   $0.0400
-  Savings: 68.5%
+  vs. all-Opus baseline:   $0.0210
+  Savings: 40.0%
   Estimated latency:       4000ms
 ```
 
@@ -111,8 +111,8 @@ aiex compile triage.ailang
   tx-1-ticket_cat  DEDUCE     NONE       claude-sonnet-4-6          335  $0.0126    4000ms
 
   Total estimated cost:    $0.0126
-  vs. all-Opus baseline:   $0.0400
-  Savings: 68.5%
+  vs. all-Opus baseline:   $0.0210
+  Savings: 40.0%
 ```
 
 The estimate does not move: the budget estimator prices a transaction
@@ -222,8 +222,8 @@ Compile one final time:
 
 ```
   Total estimated cost:    $0.0126
-  vs. all-Opus baseline:   $0.0400
-  Savings: 68.5%
+  vs. all-Opus baseline:   $0.0210
+  Savings: 40.0%
 ```
 
 We have added two `MUST_INCLUDE` concepts, two `CANNOT_INCLUDE`

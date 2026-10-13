@@ -137,11 +137,12 @@ token counts and network conditions.
 
 - **Total estimated cost.** The sum of per-transaction `Est. Cost`.
 - **vs. all-Opus baseline.** A comparison cost: what you would have
-  paid if every operation had dispatched to Opus with no routing
-  optimization. This uses a fixed assumption of 3,000 input + 1,000
-  output tokens per call, priced at Opus rates -- roughly $0.12 per
-  transaction. This is the number that makes the savings meaningful;
-  without it, "$0.044 total" is just a number.
+  paid if every LLM operation had dispatched to Opus with no routing
+  optimization. It prices the same per-transaction token estimates as
+  the routed plan at Opus rates (`EXECUTE_CODE` blocks are $0 in
+  both), so the difference is the routing decision alone. This is the
+  number that makes the savings meaningful; without it, "$0.0447
+  total" is just a number.
 - **Savings %.** `(1 - total / baseline) * 100`.
 - **Estimated latency.** The sum of sequential transactions plus the
   `max()` within each parallel group -- *not* the naive sum. See
@@ -203,8 +204,8 @@ Parallel groups: parallel-1(3)
   tx-4-compare_runs     COMPARE    STANDARD   claude-haiku-4-5         1050  $0.0056    2050ms
 
   Total estimated cost:    $0.0584
-  vs. all-Opus baseline:   $0.1600
-  Savings: 63.5%
+  vs. all-Opus baseline:   $0.1159
+  Savings: 49.6%
   Estimated latency:       6100ms
 ```
 
@@ -228,7 +229,7 @@ Reading it line by line:
   latency is max(4000, 4050, 4050) + 2050 = 6,100ms.
 - **Totals.** Six cents for a four-transaction trade-compliance
   analysis with three retrieval strategies and a cross-validation.
-  Against an all-Opus baseline of 16 cents, that is a 63% saving --
+  Against an all-Opus baseline of 12 cents, that is a 50% saving --
   and the saving comes entirely from routing `COMPARE` to Haiku and
   keeping `DEDUCE` on Sonnet instead of sending everything to Opus.
 
@@ -251,8 +252,8 @@ Transactions: 5
   tx-5-audit                 CODE        NONE       local-code                  0  $0.0000    100ms
 
   Total estimated cost:    $0.0447
-  vs. all-Opus baseline:   $0.1200
-  Savings: 62.7%
+  vs. all-Opus baseline:   $0.0745
+  Savings: 40.0%
   Estimated latency:       8200ms
 ```
 
@@ -275,13 +276,14 @@ A few things stand out:
   savings) and 535 for `SYNTHESIZE` (1400 minus 865). Declaring
   `DEPTH: EXHAUSTIVE` on either would route it to Opus, and the
   report would show the cost of that choice.
-- **Total: $0.0447, saving 62.7%.** The baseline -- all-Opus, at
-  3K input / 1K output tokens per reasoning operation -- would be
-  $0.12. The saving comes from sending nothing to an LLM that does
-  not need one (the two Python blocks) and running the three
-  reasoning steps on Sonnet instead of Opus.
+- **Total: $0.0447, saving 40.0%.** The baseline -- the same token
+  estimates priced at Opus rates -- would be $0.0745. All three
+  reasoning steps run on Sonnet, so the saving is exactly the
+  Sonnet/Opus price ratio ($3/$15 vs $5/$25 per million tokens). The
+  two Python blocks cost $0 in both plans; their benefit is that the
+  arithmetic is exact, not that the estimate is lower.
 
-That 62.7% saving is not a marketing claim. It is a direct
+That 40.0% saving is not a marketing claim. It is a direct
 consequence of routing being a compile-time decision made per
 operation, with the accounting visible in the report. When you tune
 the program -- change `DEPTH`, change `RETRIEVAL_BUDGET`, split one

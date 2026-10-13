@@ -96,10 +96,11 @@ tx-5-audit          CODE        NONE       local-code        $0.0000    100ms
 ```
 
 Two of the five transactions cost nothing because they are code.
-The savings over the all-Opus baseline -- 62.7% on this program --
-are partly the routing story told in
-[chapter 11](11_multi_model_routing.md) and partly the fact that
-deterministic steps were not sent to an LLM at all.
+The savings over the all-Opus baseline -- 40.0% on this program --
+are the routing story told in
+[chapter 11](11_multi_model_routing.md); code blocks cost $0 in both
+the routed plan and the baseline, so what they buy is exact,
+reproducible arithmetic rather than a lower estimate.
 
 ## What Happens at Runtime
 

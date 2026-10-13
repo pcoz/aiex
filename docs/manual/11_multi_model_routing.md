@@ -2,10 +2,10 @@
 
 The single biggest cost lever in AIEX is that it does not send every
 operation to Opus. An all-Opus baseline for the loan eligibility
-example costs $0.12 per run; the routed plan costs $0.0447 -- a 62.7%
+example costs $0.0745 per run; the routed plan costs $0.0447 -- a 40.0%
 reduction, achieved by directing each operation to the cheapest tier
-that can produce the required output and running deterministic steps
-as code. On the `test_10` benchmark the same mechanism yields 63.5%
+that can produce the required output (both figures use the same token
+estimates). On the `test_10` benchmark the same mechanism yields 49.6%
 savings for a total of $0.0584 per run.
 
 This chapter is about how AIEX makes those routing decisions. The

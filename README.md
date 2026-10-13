@@ -16,8 +16,8 @@ Transactions: 5
 | tx-5-codeblock    | CODE_EXECUTION| local-code  |   $0.0000 |
 
   Total estimated cost:    $0.0447
-  vs. all-Opus baseline:   $0.1200
-  Savings: 62.7%
+  vs. all-Opus baseline:   $0.0745
+  Savings: 40.0%
   Estimated latency:       8200ms
 ```
 
@@ -27,7 +27,7 @@ Transactions: 5
 
 | Need | Without AIEX | With AIEX |
 |---|---|---|
-| Cost at scale | Pay Opus prices on every call | Multi-tier routing per reasoning type (the loan-eligibility example estimates 63% below an all-Opus baseline) |
+| Cost at scale | Pay Opus prices on every call | Multi-tier routing per reasoning type (the loan-eligibility example estimates 40% below the same plan run entirely on Opus) |
 | Predictable budget | Find out at month-end | Pre-execution report shows cost, latency, routing per transaction |
 | Audit trail | Bolted on; often incomplete | Built in: every transaction logged with rationale, contract violations, retries |
 | Output validation | Post-hoc parsing in your app | Contracts enforced at the runtime boundary with retry-with-reinforcement and rollback |

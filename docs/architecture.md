@@ -961,19 +961,23 @@ execution. For the test_10 program:
 
 ### 10.6 Baseline Comparison
 
-Every budget report includes comparison against an all-Opus baseline (every
-LLM operation dispatched to claude-opus-4-6 with no routing optimization;
-`EXECUTE_CODE` blocks are excluded):
+Every budget report includes comparison against an all-Opus baseline: each
+LLM transaction's own estimate (same input/output token counts, same
+retrieval cost) re-priced with the model forced to claude-opus-4-6.
+`EXECUTE_CODE` blocks are $0 in both plans, so the savings figure measures
+routing alone:
 
 ```
-  baseline_cost = num_llm_transactions * (3000/1000 * $0.005 + 1000/1000 * $0.025)
-                = num_llm_transactions * $0.04
+  baseline_cost = sum over LLM transactions of
+                  calculate_budget(..., routing=<forced GENERATIVE_DEEP>).est_cost
 
   savings_pct   = (1 - actual_cost / baseline_cost) * 100
 ```
 
-For test_10 the routing-optimized plan estimates 63.5% savings ($0.058 vs.
-$0.16 baseline); for the loan-eligibility example, 62.7% ($0.0447 vs. $0.12).
+For test_10 the routing-optimized plan estimates 49.6% savings ($0.058 vs.
+$0.116 baseline); for the loan-eligibility example, 40.0% ($0.0447 vs.
+$0.0745) -- exactly the Sonnet/Opus price ratio, since all three of its
+reasoning steps run on Sonnet.
 
 ---
 

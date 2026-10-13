@@ -68,8 +68,8 @@ tx-4-synth-decision SYNTHESIZE  NONE       claude-sonnet-4-6  $0.0162    4000ms
 tx-5-audit          CODE        NONE       local-code         $0.0000    100ms
 
   Total estimated cost:    $0.0447
-  vs. all-Opus baseline:   $0.1200
-  Savings: 62.7%
+  vs. all-Opus baseline:   $0.0745
+  Savings: 40.0%
   Estimated latency:       8200ms
 ```
 

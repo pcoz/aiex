@@ -117,8 +117,8 @@ Transactions: 1
   tx-1-weather_fa.  RETRIEVE   MINIMAL    claude-haiku-4-5       200   $0.0020    2050ms
 
   Total estimated cost:    $0.0020
-  vs. all-Opus baseline:   $0.0400
-  Savings: 95.0%
+  vs. all-Opus baseline:   $0.0098
+  Savings: 79.7%
   Estimated latency:       2050ms
 ```
 
@@ -129,7 +129,7 @@ fill, so the compiler escalates it to the light generative tier
 program costs a fraction of a cent. The all-Opus baseline is
 calculated for comparison: if every operation had been dispatched to
 Opus -- the naive default in most LLM apps -- the estimate would be
-four cents.
+about one cent.
 
 You have now compiled an AILang program. No API calls happened. No
 credits spent. The compiler read your file, resolved routing, computed

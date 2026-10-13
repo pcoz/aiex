@@ -16,12 +16,12 @@ tx-4-synth-decision SYNTHESIZE  NONE       claude-sonnet-4-6         535  $0.016
 tx-5-audit          CODE        NONE       local-code                  0  $0.0000    100ms
 
   Total estimated cost:    $0.0447
-  vs. all-Opus baseline:   $0.1200
-  Savings: 62.7%
+  vs. all-Opus baseline:   $0.0745
+  Savings: 40.0%
   Estimated latency:       8200ms
 ```
 
-`$0.0447 per run. About eight seconds. 63% cheaper than the naive all-Opus approach.`
+`$0.0447 per run. About eight seconds. 40% cheaper than running every step on Opus.`
 The developer sees that number before paying a cent. If it is too high,
 they change `DEPTH: DEEP` to `DEPTH: STANDARD`, or drop a
 `RETRIEVAL_BUDGET: STANDARD` down to `MINIMAL`, recompile, and watch the
