@@ -332,9 +332,13 @@ def _generate_contract(op: OperationNode) -> TransactionContract:
     The contract is a set of checks the runtime runs against the model's
     response to verify it meets the AILang program's constraints:
 
-    - **MUST_INCLUDE** items become CRITICAL-severity semantic scans.
-      If the response is missing required content, the runtime rolls back
-      and retries (up to ``max_retries``).
+    - **MUST_INCLUDE** items become MAJOR-severity semantic scans.
+      If the response is missing required content, the runtime retries
+      with a reinforced prompt (up to ``max_retries``) and rolls back if
+      the content is still missing (spec section 6.2).
+
+    - **OUTPUT_FORMAT** violations are CRITICAL (spec section 6): the
+      runtime rolls back without retrying (see ``runtime/contracts.py``).
 
     - **CANNOT_INCLUDE** items become MINOR-severity warnings.  They are
       flagged but not blocking because full semantic exclusion detection
@@ -348,15 +352,16 @@ def _generate_contract(op: OperationNode) -> TransactionContract:
     cannot_checks: list[ContractCheck] = []
 
     if op.boundary:
-        # Each MUST_INCLUDE item becomes a CRITICAL check -- the response
-        # is considered invalid (rolled back) if it is missing.
+        # Each MUST_INCLUDE item becomes a MAJOR check -- a response that
+        # is missing it is retried with a reinforced prompt, and rolled
+        # back only if it is still missing after max_retries.
         for item in op.boundary.must_include:
             must_checks.append(ContractCheck(
                 name=f"must-include-{item}",
                 detection_method="SEMANTIC_SCAN",
                 target_field="response",
                 expected_content=item,
-                severity=Severity.CRITICAL,
+                severity=Severity.MAJOR,
                 message=f"Missing required content: {item}",
             ))
 

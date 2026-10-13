@@ -27,10 +27,12 @@ categories of contract rules:
     declared OUTPUT_FORMAT from the AILang source. Missing fields, wrong
     types, and enum constraint violations are all CRITICAL severity.
 
-Severity escalation model:
-    MINOR    -> cosmetic issues; response is committed with warnings
-    MAJOR    -> boundary violations; triggers retry with reinforced prompting
+Severity escalation model (spec section 6.2):
+    MINOR    -> committed with warnings (CANNOT_INCLUDE, retrieval checks)
+    MAJOR    -> retry with reinforced prompting up to max_retries, then
+                rollback (MUST_INCLUDE)
     CRITICAL -> structural failures; immediate rollback, no retry
+                (OUTPUT_FORMAT schema)
 
 BERT integration:
     When sentence-transformers is available, MUST_INCLUDE and CANNOT_INCLUDE
