@@ -143,8 +143,11 @@ class AiexEngine:
 
         Walks the compiler's topological ordering. When a transaction belongs
         to a parallel group, the entire group is dispatched on first encounter
-        (subsequent members are skipped because they're already in `completed`).
-        Sequential transactions have their dependency sets checked before dispatch.
+        (subsequent members are skipped because the group is marked executed).
+        Every transaction -- grouped or sequential -- has its dependency set
+        checked before dispatch, and only COMMITTED transactions count as
+        completed: a rolled-back (or skipped) transaction's dependents are
+        skipped and logged, so they never run with an input missing.
         """
         tx_map = {tx.id: tx for tx in plan.transactions}
         completed: set[str] = set()
@@ -155,6 +158,23 @@ class AiexEngine:
         for group_name, members in plan.parallel_groups.items():
             for m in members:
                 in_group[m] = group_name
+
+        def run_if_ready(tx: TransactionPlan) -> None:
+            # Skip (and log) if any upstream transaction did not commit --
+            # it rolled back, or was itself skipped.
+            unmet = [d for d in tx.depends_on if d not in completed]
+            if unmet:
+                if self.verbose:
+                    console.print(f"\n  [red]SKIPPED {tx.id}[/red] (unmet dependencies: {unmet})")
+                state.log_event(
+                    "ERROR",
+                    {"tx": tx.id, "message": f"Unmet dependencies: {unmet}"},
+                )
+                return
+            self._execute_transaction(tx, state, plan)
+            result = state.results.get(tx.id)
+            if result is not None and result.status == TransactionStatus.COMMITTED:
+                completed.add(tx.id)
 
         # Walk transactions in topological order (the compiler guarantees this
         # ordering satisfies all inter-transaction data dependencies).
@@ -175,23 +195,11 @@ class AiexEngine:
                             f"({len(group_members)} transactions)[/yellow]"
                         )
                     for gtx in group_members:
-                        self._execute_transaction(gtx, state, plan)
-                        completed.add(gtx.id)
+                        run_if_ready(gtx)
                     executed_groups.add(group_name)
-            elif tx.id not in completed:
-                # Sequential transaction -- verify all upstream dependencies
-                # have committed before we dispatch. If any are missing (e.g.,
-                # an upstream rolled back), skip this tx and log an error.
-                deps_met = all(d in completed for d in tx.depends_on)
-                if not deps_met:
-                    unmet = [d for d in tx.depends_on if d not in completed]
-                    state.log_event(
-                        "ERROR",
-                        {"tx": tx.id, "message": f"Unmet dependencies: {unmet}"},
-                    )
-                    continue
-                self._execute_transaction(tx, state, plan)
-                completed.add(tx.id)
+            else:
+                # Sequential transaction.
+                run_if_ready(tx)
 
     def _execute_transaction(
         self,
